@@ -1,23 +1,24 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import API from "../services/api"; // ✅ FIXED
 import "./Home.css";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
-
-  const API = "http://localhost:5000/api";
+  const [loading, setLoading] = useState(true);
 
   // ==============================
-  // FETCH PRODUCTS (SAFE FIX)
+  // FETCH PRODUCTS
   // ==============================
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get(`${API}/products`);
+        const res = await API.get("/products"); // ✅ FIXED
         setProducts(res.data || []);
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching products:", err);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -49,8 +50,16 @@ export default function Home() {
     p.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  // ==============================
+  // LOADING UI
+  // ==============================
+  if (loading) {
+    return <h2 style={{ textAlign: "center" }}>Loading Products...</h2>;
+  }
+
   return (
     <div className="home">
+
       {/* NAVBAR */}
       <div className="navbar">
         <h2>🥬 VeggieMart</h2>
@@ -100,6 +109,7 @@ export default function Home() {
           )}
         </div>
       </div>
+
     </div>
   );
 }

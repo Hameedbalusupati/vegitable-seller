@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import axios from "axios";
+import API from "../services/api"; // ✅ FIXED
 import "./Products.css";
 
 export default function Products() {
@@ -7,17 +7,16 @@ export default function Products() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const API = "http://localhost:5000/api";
-
   // ==============================
   // FETCH PRODUCTS
   // ==============================
   const fetchProducts = useCallback(async () => {
     try {
-      const res = await axios.get(`${API}/products`);
+      const res = await API.get("/products"); // ✅ FIXED
       setProducts(res.data || []);
     } catch (err) {
-      console.error("Error fetching products", err);
+      console.error("Error fetching products:", err);
+      alert("❌ Failed to load products");
     }
   }, []);
 
@@ -38,27 +37,34 @@ export default function Products() {
   // ADD TO CART
   // ==============================
   const addToCart = (product) => {
-    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+    try {
+      let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-    const existing = cart.find((item) => item.id === product.id);
+      const existing = cart.find((item) => item.id === product.id);
 
-    if (existing) {
-      existing.quantity += 1;
-    } else {
-      cart.push({ ...product, quantity: 1 });
+      if (existing) {
+        existing.quantity += 1;
+      } else {
+        cart.push({ ...product, quantity: 1 });
+      }
+
+      localStorage.setItem("cart", JSON.stringify(cart));
+      alert("✅ Added to cart");
+    } catch (err) {
+      console.error("Cart error:", err);
     }
-
-    localStorage.setItem("cart", JSON.stringify(cart));
-    alert("✅ Added to cart");
   };
 
   // ==============================
   // SEARCH FILTER
   // ==============================
   const filteredProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(search.toLowerCase())
+    p.name?.toLowerCase().includes(search.toLowerCase())
   );
 
+  // ==============================
+  // LOADING UI
+  // ==============================
   if (loading) {
     return <h2 className="loading">Loading Products...</h2>;
   }
@@ -89,7 +95,7 @@ export default function Products() {
               />
 
               <h3>{p.name}</h3>
-              <p className="price">₹{p.price_retail}</p>
+              <p className="price">₹{p.price_retail || p.price}</p>
 
               <button onClick={() => addToCart(p)}>
                 Add to Cart

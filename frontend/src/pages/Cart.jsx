@@ -1,8 +1,11 @@
 import { useState } from "react";
+import API from "../services/api"; // ✅ backend connection
 import "./Cart.css";
 
 export default function Cart() {
-  // ✅ FIX: Lazy initialization (NO useEffect needed)
+  // ==============================
+  // LOAD CART (SAFE)
+  // ==============================
   const [cart, setCart] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("cart")) || [];
@@ -11,8 +14,10 @@ export default function Cart() {
     }
   });
 
+  const [loading, setLoading] = useState(false);
+
   // ==============================
-  // UPDATE LOCAL STORAGE
+  // UPDATE CART
   // ==============================
   const updateCart = (newCart) => {
     setCart(newCart);
@@ -20,7 +25,7 @@ export default function Cart() {
   };
 
   // ==============================
-  // INCREASE QUANTITY
+  // INCREASE QTY
   // ==============================
   const increaseQty = (id) => {
     const updated = cart.map((item) =>
@@ -32,7 +37,7 @@ export default function Cart() {
   };
 
   // ==============================
-  // DECREASE QUANTITY
+  // DECREASE QTY
   // ==============================
   const decreaseQty = (id) => {
     const updated = cart
@@ -55,7 +60,7 @@ export default function Cart() {
   };
 
   // ==============================
-  // TOTAL CALCULATION
+  // TOTAL PRICE
   // ==============================
   const total = cart.reduce(
     (sum, item) => sum + item.price_retail * item.quantity,
@@ -63,10 +68,43 @@ export default function Cart() {
   );
 
   // ==============================
-  // CHECKOUT
+  // TOTAL ITEMS COUNT
   // ==============================
-  const handleCheckout = () => {
-    alert("Proceeding to Checkout 🚀");
+  const totalItems = cart.reduce(
+    (sum, item) => sum + item.quantity,
+    0
+  );
+
+  // ==============================
+  // CHECKOUT (API CALL)
+  // ==============================
+  const handleCheckout = async () => {
+    if (cart.length === 0) {
+      alert("Cart is empty ❌");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const orderData = {
+        items: cart,
+        total_amount: total,
+      };
+
+      await API.post("/orders", orderData);
+
+      alert("✅ Order placed successfully!");
+
+      // Clear cart
+      updateCart([]);
+
+    } catch (err) {
+      console.error("Checkout error:", err);
+      alert("❌ Failed to place order");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -77,6 +115,7 @@ export default function Cart() {
         <h2 className="empty">Your cart is empty</h2>
       ) : (
         <div className="cart-wrapper">
+
           {/* LEFT SIDE */}
           <div className="cart-items">
             {cart.map((item) => (
@@ -113,7 +152,7 @@ export default function Cart() {
 
             <div className="summary-row">
               <span>Total Items</span>
-              <span>{cart.length}</span>
+              <span>{totalItems}</span>
             </div>
 
             <div className="summary-row">
@@ -121,10 +160,15 @@ export default function Cart() {
               <span>₹{total}</span>
             </div>
 
-            <button className="checkout-btn" onClick={handleCheckout}>
-              Proceed to Checkout
+            <button
+              className="checkout-btn"
+              onClick={handleCheckout}
+              disabled={loading}
+            >
+              {loading ? "Processing..." : "Proceed to Checkout"}
             </button>
           </div>
+
         </div>
       )}
     </div>

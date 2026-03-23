@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import axios from "axios";
+import API from "../services/api"; // ✅ FIXED
 import "./FarmerDashboard.css";
 
 export default function FarmerDashboard() {
@@ -14,14 +14,12 @@ export default function FarmerDashboard() {
     image: ""
   });
 
-  const API = "http://localhost:5000/api";
-
   // ==============================
   // FETCH PRODUCTS
   // ==============================
   const fetchProducts = useCallback(async () => {
     try {
-      const res = await axios.get(`${API}/farmer/products`);
+      const res = await API.get("/farmer/products"); // ✅ FIXED
       setProducts(res.data || []);
     } catch (err) {
       console.error("Error fetching products", err);
@@ -33,7 +31,7 @@ export default function FarmerDashboard() {
   // ==============================
   const fetchOrders = useCallback(async () => {
     try {
-      const res = await axios.get(`${API}/farmer/orders`);
+      const res = await API.get("/farmer/orders"); // ✅ FIXED
       setOrders(res.data || []);
     } catch (err) {
       console.error("Error fetching orders", err);
@@ -68,8 +66,9 @@ export default function FarmerDashboard() {
   // ==============================
   const addProduct = async (e) => {
     e.preventDefault();
+
     try {
-      await axios.post(`${API}/farmer/products`, form);
+      await API.post("/farmer/products", form); // ✅ FIXED
 
       alert("✅ Vegetable Added");
 
@@ -82,7 +81,8 @@ export default function FarmerDashboard() {
 
       fetchProducts();
     } catch (err) {
-      console.error(err);
+      console.error("Add error:", err);
+      alert("❌ Failed to add product");
     }
   };
 
@@ -93,10 +93,10 @@ export default function FarmerDashboard() {
     if (!window.confirm("Delete this product?")) return;
 
     try {
-      await axios.delete(`${API}/farmer/products/${id}`);
+      await API.delete(`/farmer/products/${id}`); // ✅ FIXED
       fetchProducts();
     } catch (err) {
-      console.error(err);
+      console.error("Delete error:", err);
     }
   };
 
@@ -105,15 +105,15 @@ export default function FarmerDashboard() {
   // ==============================
   const updateStatus = async (id, status) => {
     try {
-      await axios.put(`${API}/farmer/orders/${id}`, { status });
+      await API.put(`/farmer/orders/${id}`, { status }); // ✅ FIXED
       fetchOrders();
     } catch (err) {
-      console.error(err);
+      console.error("Update error:", err);
     }
   };
 
   // ==============================
-  // LOADING
+  // LOADING UI
   // ==============================
   if (loading) {
     return <h2 style={{ textAlign: "center" }}>Loading Farmer Data...</h2>;
@@ -123,13 +123,12 @@ export default function FarmerDashboard() {
     <div className="farmer-dashboard">
       <h1>🌾 Farmer Dashboard</h1>
 
-      {/* ================= ADD PRODUCT ================= */}
+      {/* ADD PRODUCT */}
       <div className="card">
         <h2>Add Your Vegetable</h2>
 
         <form onSubmit={addProduct} className="form-grid">
           <input
-            type="text"
             name="name"
             placeholder="Vegetable Name"
             value={form.name}
@@ -156,20 +155,17 @@ export default function FarmerDashboard() {
           />
 
           <input
-            type="text"
             name="image"
             placeholder="Image URL"
             value={form.image}
             onChange={handleChange}
           />
 
-          <button type="submit" className="btn btn-green">
-            Add Vegetable
-          </button>
+          <button className="btn btn-green">Add Vegetable</button>
         </form>
       </div>
 
-      {/* ================= PRODUCTS ================= */}
+      {/* PRODUCTS */}
       <div className="card">
         <h2>Your Products</h2>
 
@@ -184,7 +180,7 @@ export default function FarmerDashboard() {
                   alt={p.name}
                 />
                 <h3>{p.name}</h3>
-                <p>Price: ₹{p.price}</p>
+                <p>₹{p.price}</p>
                 <p>Stock: {p.stock}</p>
 
                 <button
@@ -199,14 +195,14 @@ export default function FarmerDashboard() {
         </div>
       </div>
 
-      {/* ================= ORDERS ================= */}
+      {/* ORDERS */}
       <div className="card">
         <h2>Orders</h2>
 
         <table className="table">
           <thead>
             <tr>
-              <th>Order ID</th>
+              <th>ID</th>
               <th>User</th>
               <th>Amount</th>
               <th>Status</th>
@@ -217,7 +213,7 @@ export default function FarmerDashboard() {
           <tbody>
             {orders.length === 0 ? (
               <tr>
-                <td colSpan="5">No orders available</td>
+                <td colSpan="5">No orders</td>
               </tr>
             ) : (
               orders.map((o) => (
@@ -236,8 +232,8 @@ export default function FarmerDashboard() {
 
                     <button
                       className="btn btn-green"
-                      style={{ marginLeft: "5px" }}
                       onClick={() => updateStatus(o.id, "Shipped")}
+                      style={{ marginLeft: "5px" }}
                     >
                       Ship
                     </button>

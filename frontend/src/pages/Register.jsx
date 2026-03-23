@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { useNavigate, Link } from "react-router-dom";
+import API from "../services/api"; // ✅ FIXED
 import "./Register.css";
 
 export default function Register() {
@@ -16,16 +16,14 @@ export default function Register() {
 
   const [loading, setLoading] = useState(false);
 
-  const API = "http://localhost:5000/api";
-
   // ==============================
   // HANDLE INPUT
   // ==============================
   const handleChange = (e) => {
-    setForm({
-      ...form,
+    setForm((prev) => ({
+      ...prev,
       [e.target.name]: e.target.value
-    });
+    }));
   };
 
   // ==============================
@@ -35,39 +33,48 @@ export default function Register() {
     e.preventDefault();
 
     if (!form.name || !form.email || !form.password) {
-      alert("Please fill all fields");
+      alert("⚠️ Please fill all fields");
+      return;
+    }
+
+    if (form.password.length < 6) {
+      alert("⚠️ Password must be at least 6 characters");
       return;
     }
 
     if (form.password !== form.confirmPassword) {
-      alert("Passwords do not match");
+      alert("⚠️ Passwords do not match");
       return;
     }
 
     try {
       setLoading(true);
 
-      const res = await axios.post(`${API}/register`, {
+      const res = await API.post("/register", {
         name: form.name,
         email: form.email,
         password: form.password,
         role: form.role
-      });
+      }); // ✅ FIXED
 
       alert("✅ Registration Successful");
 
-      // Optional: auto login
-      if (res.data.token) {
+      // Optional auto login
+      if (res.data?.token) {
         localStorage.setItem("token", res.data.token);
         localStorage.setItem("user", JSON.stringify(res.data.user));
       }
 
-      // Redirect
       navigate("/login");
 
     } catch (err) {
-      console.error(err);
-      alert("❌ Registration failed (Email may already exist)");
+      console.error("Register error:", err);
+
+      if (err.response?.data?.message) {
+        alert(err.response.data.message);
+      } else {
+        alert("❌ Registration failed (Email may already exist)");
+      }
     } finally {
       setLoading(false);
     }
@@ -84,6 +91,7 @@ export default function Register() {
           placeholder="Full Name"
           value={form.name}
           onChange={handleChange}
+          required
         />
 
         <input
@@ -92,6 +100,7 @@ export default function Register() {
           placeholder="Email Address"
           value={form.email}
           onChange={handleChange}
+          required
         />
 
         <input
@@ -100,6 +109,7 @@ export default function Register() {
           placeholder="Password"
           value={form.password}
           onChange={handleChange}
+          required
         />
 
         <input
@@ -108,6 +118,7 @@ export default function Register() {
           placeholder="Confirm Password"
           value={form.confirmPassword}
           onChange={handleChange}
+          required
         />
 
         {/* ROLE SELECT */}
@@ -121,7 +132,7 @@ export default function Register() {
         </button>
 
         <p>
-          Already have an account? <a href="/login">Login</a>
+          Already have an account? <Link to="/login">Login</Link>
         </p>
       </form>
     </div>

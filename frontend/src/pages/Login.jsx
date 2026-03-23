@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { useNavigate, Link } from "react-router-dom";
+import API from "../services/api"; // ✅ FIXED
 import "./Login.css";
 
 export default function Login() {
@@ -13,16 +13,14 @@ export default function Login() {
 
   const [loading, setLoading] = useState(false);
 
-  const API = "http://localhost:5000/api";
-
   // ==============================
   // HANDLE INPUT
   // ==============================
   const handleChange = (e) => {
-    setForm({
-      ...form,
+    setForm((prev) => ({
+      ...prev,
       [e.target.name]: e.target.value
-    });
+    }));
   };
 
   // ==============================
@@ -32,14 +30,14 @@ export default function Login() {
     e.preventDefault();
 
     if (!form.email || !form.password) {
-      alert("Please fill all fields");
+      alert("⚠️ Please fill all fields");
       return;
     }
 
     try {
       setLoading(true);
 
-      const res = await axios.post(`${API}/login`, form);
+      const res = await API.post("/login", form); // ✅ FIXED
 
       // ✅ Save token + user
       localStorage.setItem("token", res.data.token);
@@ -48,17 +46,24 @@ export default function Login() {
       alert("✅ Login Successful");
 
       // ✅ Redirect based on role
-      if (res.data.user.role === "admin") {
+      const role = res.data.user?.role;
+
+      if (role === "admin") {
         navigate("/admin");
-      } else if (res.data.user.role === "farmer") {
+      } else if (role === "farmer") {
         navigate("/farmer");
       } else {
         navigate("/");
       }
 
     } catch (err) {
-      console.error(err);
-      alert("❌ Invalid email or password");
+      console.error("Login error:", err);
+
+      if (err.response?.data?.message) {
+        alert(err.response.data.message);
+      } else {
+        alert("❌ Invalid email or password");
+      }
     } finally {
       setLoading(false);
     }
@@ -75,6 +80,7 @@ export default function Login() {
           placeholder="Enter Email"
           value={form.email}
           onChange={handleChange}
+          required
         />
 
         <input
@@ -83,6 +89,7 @@ export default function Login() {
           placeholder="Enter Password"
           value={form.password}
           onChange={handleChange}
+          required
         />
 
         <button type="submit" disabled={loading}>
@@ -90,7 +97,7 @@ export default function Login() {
         </button>
 
         <p>
-          Don't have an account? <a href="/register">Register</a>
+          Don't have an account? <Link to="/register">Register</Link>
         </p>
       </form>
     </div>

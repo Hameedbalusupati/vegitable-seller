@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import axios from "axios";
+import API from "../services/api"; // ✅ USE THIS
 import "./AdminDashboard.css";
 
 export default function AdminDashboard() {
@@ -15,14 +15,12 @@ export default function AdminDashboard() {
     image: ""
   });
 
-  const API = "http://localhost:5000/api";
-
   // ==============================
   // FETCH PRODUCTS
   // ==============================
   const fetchProducts = useCallback(async () => {
     try {
-      const res = await axios.get(`${API}/products`);
+      const res = await API.get("/products"); // ✅ FIXED
       setProducts(res.data || []);
     } catch (err) {
       console.error("Error fetching products", err);
@@ -34,16 +32,13 @@ export default function AdminDashboard() {
   // ==============================
   const fetchOrders = useCallback(async () => {
     try {
-      const res = await axios.get(`${API}/orders`);
+      const res = await API.get("/orders"); // ✅ FIXED
       setOrders(res.data || []);
     } catch (err) {
       console.error("Error fetching orders", err);
     }
   }, []);
 
-  // ==============================
-  // LOAD DATA (FIXED)
-  // ==============================
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -70,9 +65,9 @@ export default function AdminDashboard() {
   const addProduct = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API}/products`, form);
+      await API.post("/products", form); // ✅ FIXED
 
-      alert("✅ Product Added Successfully");
+      alert("✅ Product Added");
 
       setForm({
         name: "",
@@ -95,7 +90,7 @@ export default function AdminDashboard() {
     if (!window.confirm("Are you sure?")) return;
 
     try {
-      await axios.delete(`${API}/products/${id}`);
+      await API.delete(`/products/${id}`); // ✅ FIXED
       fetchProducts();
     } catch (err) {
       console.error("Delete error", err);
@@ -107,16 +102,13 @@ export default function AdminDashboard() {
   // ==============================
   const updateStatus = async (id, status) => {
     try {
-      await axios.put(`${API}/orders/${id}`, { status });
+      await API.put(`/orders/${id}`, { status }); // ✅ FIXED
       fetchOrders();
     } catch (err) {
       console.error("Update status error", err);
     }
   };
 
-  // ==============================
-  // LOADING UI
-  // ==============================
   if (loading) {
     return <h2 style={{ textAlign: "center" }}>Loading...</h2>;
   }
@@ -125,54 +117,16 @@ export default function AdminDashboard() {
     <div className="dashboard">
       <h1>Admin Dashboard 🧑‍💼</h1>
 
-      {/* ================= ADD PRODUCT ================= */}
+      {/* ADD PRODUCT */}
       <div className="card">
         <h2>Add Vegetable</h2>
 
         <form onSubmit={addProduct} className="form-grid">
-          <input
-            type="text"
-            name="name"
-            placeholder="Vegetable Name"
-            value={form.name}
-            onChange={handleChange}
-            required
-          />
-
-          <input
-            type="number"
-            name="price_retail"
-            placeholder="Retail Price"
-            value={form.price_retail}
-            onChange={handleChange}
-            required
-          />
-
-          <input
-            type="number"
-            name="price_wholesale"
-            placeholder="Wholesale Price"
-            value={form.price_wholesale}
-            onChange={handleChange}
-            required
-          />
-
-          <input
-            type="number"
-            name="stock"
-            placeholder="Stock"
-            value={form.stock}
-            onChange={handleChange}
-            required
-          />
-
-          <input
-            type="text"
-            name="image"
-            placeholder="Image URL"
-            value={form.image}
-            onChange={handleChange}
-          />
+          <input name="name" placeholder="Vegetable Name" value={form.name} onChange={handleChange} required />
+          <input type="number" name="price_retail" placeholder="Retail Price" value={form.price_retail} onChange={handleChange} required />
+          <input type="number" name="price_wholesale" placeholder="Wholesale Price" value={form.price_wholesale} onChange={handleChange} required />
+          <input type="number" name="stock" placeholder="Stock" value={form.stock} onChange={handleChange} required />
+          <input name="image" placeholder="Image URL" value={form.image} onChange={handleChange} />
 
           <button type="submit" className="btn btn-green">
             Add Product
@@ -180,83 +134,47 @@ export default function AdminDashboard() {
         </form>
       </div>
 
-      {/* ================= PRODUCTS ================= */}
+      {/* PRODUCTS */}
       <div className="card">
         <h2>All Vegetables</h2>
 
         <div className="product-grid">
-          {products.length === 0 ? (
-            <p>No products available</p>
-          ) : (
-            products.map((p) => (
-              <div key={p.id} className="product-card">
-                <img
-                  src={p.image || "https://via.placeholder.com/150"}
-                  alt={p.name}
-                />
-                <h3>{p.name}</h3>
-                <p>Retail: ₹{p.price_retail}</p>
-                <p>Wholesale: ₹{p.price_wholesale}</p>
-                <p>Stock: {p.stock}</p>
+          {products.map((p) => (
+            <div key={p.id} className="product-card">
+              <img src={p.image || "https://via.placeholder.com/150"} alt={p.name} />
+              <h3>{p.name}</h3>
+              <p>₹{p.price_retail}</p>
 
-                <button
-                  onClick={() => deleteProduct(p.id)}
-                  className="btn btn-red"
-                >
-                  Delete
-                </button>
-              </div>
-            ))
-          )}
+              <button onClick={() => deleteProduct(p.id)} className="btn btn-red">
+                Delete
+              </button>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* ================= ORDERS ================= */}
+      {/* ORDERS */}
       <div className="card">
         <h2>Orders</h2>
 
         <table className="table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>User</th>
-              <th>Amount</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-
           <tbody>
-            {orders.length === 0 ? (
-              <tr>
-                <td colSpan="5">No orders</td>
+            {orders.map((o) => (
+              <tr key={o.id}>
+                <td>{o.id}</td>
+                <td>{o.user_id}</td>
+                <td>₹{o.total_amount}</td>
+                <td>{o.status}</td>
+                <td>
+                  <button onClick={() => updateStatus(o.id, "Shipped")} className="btn btn-blue">
+                    Ship
+                  </button>
+                  <button onClick={() => updateStatus(o.id, "Delivered")} className="btn btn-green">
+                    Deliver
+                  </button>
+                </td>
               </tr>
-            ) : (
-              orders.map((o) => (
-                <tr key={o.id}>
-                  <td>{o.id}</td>
-                  <td>{o.user_id}</td>
-                  <td>₹{o.total_amount}</td>
-                  <td>{o.status}</td>
-                  <td>
-                    <button
-                      onClick={() => updateStatus(o.id, "Shipped")}
-                      className="btn btn-blue"
-                    >
-                      Ship
-                    </button>
-
-                    <button
-                      onClick={() => updateStatus(o.id, "Delivered")}
-                      className="btn btn-green"
-                      style={{ marginLeft: "5px" }}
-                    >
-                      Deliver
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
+            ))}
           </tbody>
         </table>
       </div>

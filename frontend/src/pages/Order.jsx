@@ -1,29 +1,21 @@
 import { useEffect, useState, useCallback } from "react";
-import axios from "axios";
+import API from "../services/api"; // ✅ FIXED
 import "./Order.css";
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const API = "http://localhost:5000/api";
-
   // ==============================
   // FETCH ORDERS
   // ==============================
   const fetchOrders = useCallback(async () => {
     try {
-      const token = localStorage.getItem("token");
-
-      const res = await axios.get(`${API}/orders/my`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-
+      const res = await API.get("/orders/my"); // ✅ FIXED
       setOrders(res.data || []);
     } catch (err) {
-      console.error("Error fetching orders", err);
+      console.error("Error fetching orders:", err);
+      alert("❌ Failed to load orders");
     }
   }, []);
 
@@ -41,15 +33,26 @@ export default function Orders() {
   }, [fetchOrders]);
 
   // ==============================
-  // STATUS COLOR
+  // STATUS STYLE
   // ==============================
   const getStatusClass = (status) => {
-    if (status === "Pending") return "status pending";
-    if (status === "Shipped") return "status shipped";
-    if (status === "Delivered") return "status delivered";
-    return "status";
+    switch (status) {
+      case "Pending":
+        return "status pending";
+      case "Packed":
+        return "status packed";
+      case "Shipped":
+        return "status shipped";
+      case "Delivered":
+        return "status delivered";
+      default:
+        return "status";
+    }
   };
 
+  // ==============================
+  // LOADING
+  // ==============================
   if (loading) {
     return <h2 className="loading">Loading Orders...</h2>;
   }
@@ -63,6 +66,7 @@ export default function Orders() {
       ) : (
         orders.map((order) => (
           <div key={order.id} className="order-card">
+
             {/* ORDER HEADER */}
             <div className="order-header">
               <div>
@@ -87,7 +91,9 @@ export default function Orders() {
 
                     <div>
                       <h4>{item.name}</h4>
-                      <p>₹{item.price} × {item.quantity}</p>
+                      <p>
+                        ₹{item.price || item.price_retail} × {item.quantity}
+                      </p>
                     </div>
                   </div>
                 ))
@@ -95,6 +101,7 @@ export default function Orders() {
                 <p>No items</p>
               )}
             </div>
+
           </div>
         ))
       )}
