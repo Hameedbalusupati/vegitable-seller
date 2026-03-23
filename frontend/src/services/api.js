@@ -1,27 +1,25 @@
 import axios from "axios";
 
 // ==============================
-// BASE URL (ENV REQUIRED)
+// BASE URL
 // ==============================
 const BASE_URL = import.meta.env.VITE_API_URL;
 
-// ❌ If not set, show error clearly
 if (!BASE_URL) {
-  console.error("❌ VITE_API_URL is not defined in .env");
+  console.error("VITE_API_URL is not defined in .env");
 }
 
-// Debug (optional)
-console.log("🌐 API URL:", BASE_URL);
+console.log("API URL:", BASE_URL);
 
 // ==============================
-// CREATE AXIOS INSTANCE
+// AXIOS INSTANCE
 // ==============================
 const API = axios.create({
   baseURL: BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 15000, // ⏱ increased timeout (Render is slow sometimes)
+  timeout: 30000, // ⏱ 30 sec (important for Render wake-up)
 });
 
 // ==============================
@@ -45,16 +43,34 @@ API.interceptors.request.use(
 // ==============================
 API.interceptors.response.use(
   (response) => response,
-  (error) => {
-    // ❌ Network error
+  async (error) => {
+    // ==============================
+    // NETWORK ERROR (RETRY LOGIC)
+    // ==============================
     if (!error.response) {
-      alert("❌ Network error. Backend may be down.");
+      console.warn("Backend waking up... Retrying request");
+
+      const originalRequest = error.config;
+
+      // Retry only once
+      if (!originalRequest._retry) {
+        originalRequest._retry = true;
+
+        await new Promise((resolve) => setTimeout(resolve, 5000)); // wait 5 sec
+
+        return API(originalRequest); // retry request
+      }
+
+      // After retry fails
+      alert("Server is starting... please refresh in a few seconds.");
       return Promise.reject(error);
     }
 
     const { status, data } = error.response;
 
-    // 🔐 Unauthorized
+    // ==============================
+    // UNAUTHORIZED (401)
+    // ==============================
     if (status === 401) {
       console.warn("Session expired");
 
@@ -66,17 +82,23 @@ API.interceptors.response.use(
       }
     }
 
-    // 🚫 Forbidden
+    // ==============================
+    // FORBIDDEN (403)
+    // ==============================
     if (status === 403) {
-      alert("🚫 You are not allowed to perform this action");
+      alert("You are not allowed to perform this action");
     }
 
-    // 🔥 Server error
+    // ==============================
+    // SERVER ERROR (500+)
+    // ==============================
     if (status >= 500) {
-      alert("🔥 Server error. Try again later.");
+      alert("Server error. Try again later.");
     }
 
-    // ❗ Show backend message
+    // ==============================
+    // BACKEND MESSAGE
+    // ==============================
     if (data?.message) {
       alert(data.message);
     }

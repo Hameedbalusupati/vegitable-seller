@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import API from "../services/api"; // ✅ FIXED
+import API from "../services/api";
+import Footer from "../components/Footer"; // ✅ ADDED
 import "./Home.css";
 
 export default function Home() {
@@ -7,13 +8,10 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // ==============================
-  // FETCH PRODUCTS
-  // ==============================
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await API.get("/products"); // ✅ FIXED
+        const res = await API.get("/products");
         setProducts(res.data || []);
       } catch (err) {
         console.error("Error fetching products:", err);
@@ -25,13 +23,10 @@ export default function Home() {
     fetchData();
   }, []);
 
-  // ==============================
-  // ADD TO CART
-  // ==============================
   const addToCart = (product) => {
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-    const existing = cart.find((item) => item.id === product.id);
+    const existing = cart.find((item) => item._id === product._id); // ✅ FIXED
 
     if (existing) {
       existing.quantity += 1;
@@ -43,24 +38,17 @@ export default function Home() {
     alert("✅ Added to cart");
   };
 
-  // ==============================
-  // SEARCH FILTER
-  // ==============================
   const filteredProducts = products.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  // ==============================
-  // LOADING UI
-  // ==============================
   if (loading) {
-    return <h2 style={{ textAlign: "center" }}>Loading Products...</h2>;
+    return <h2 style={{ textAlign: "center" }}>⏳ Loading Products...</h2>;
   }
 
   return (
     <div className="home">
 
-      {/* NAVBAR */}
       <div className="navbar">
         <h2>🥬 VeggieMart</h2>
 
@@ -77,13 +65,11 @@ export default function Home() {
         </div>
       </div>
 
-      {/* HERO */}
       <div className="hero">
         <h1>Fresh Vegetables Delivered to Your Door 🚚</h1>
         <p>Farm fresh veggies at best price</p>
       </div>
 
-      {/* PRODUCTS */}
       <div className="product-section">
         <h2>Fresh Vegetables</h2>
 
@@ -92,12 +78,11 @@ export default function Home() {
             <p>No products found</p>
           ) : (
             filteredProducts.map((p) => (
-              <div key={p.id} className="product-card">
+              <div key={p._id} className="product-card"> {/* ✅ FIXED */}
                 <img
                   src={p.image || "https://via.placeholder.com/150"}
                   alt={p.name}
                 />
-
                 <h3>{p.name}</h3>
                 <p>₹{p.price_retail}</p>
 
@@ -109,6 +94,9 @@ export default function Home() {
           )}
         </div>
       </div>
+
+      {/* ✅ FOOTER ADDED */}
+      <Footer />
 
     </div>
   );
