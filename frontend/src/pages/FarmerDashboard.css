@@ -1,30 +1,33 @@
 .farmer-dashboard {
   padding: 20px;
-  background: #eef7f0;
+  background: #f1f8e9;
   min-height: 100vh;
-  font-family: Arial;
+  font-family: "Poppins", sans-serif;
 }
 
 .farmer-dashboard h1 {
   margin-bottom: 20px;
 }
 
+/* CARD */
 .card {
-  background: #fff;
+  background: white;
   padding: 20px;
   margin-bottom: 25px;
-  border-radius: 10px;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
 /* FORM */
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px;
 }
 
 input {
   padding: 10px;
+  border-radius: 6px;
   border: 1px solid #ccc;
 }
 
@@ -33,32 +36,23 @@ input {
   padding: 10px;
   border: none;
   cursor: pointer;
+  border-radius: 6px;
 }
 
-.btn-green {
-  background: #28a745;
-  color: white;
-}
-
-.btn-red {
-  background: #dc3545;
-  color: white;
-}
-
-.btn-blue {
-  background: #007bff;
-  color: white;
-}
+.btn-green { background: #4caf50; color: white; }
+.btn-red { background: #e53935; color: white; }
+.btn-blue { background: #1e88e5; color: white; }
 
 /* PRODUCTS */
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 15px;
 }
 
 .product-card {
-  border: 1px solid #ddd;
+  border-radius: 10px;
+  background: white;
   padding: 10px;
   text-align: center;
 }
@@ -75,8 +69,7 @@ input {
   border-collapse: collapse;
 }
 
-.table th,
-.table td {
+.table th, .table td {
   border: 1px solid #ddd;
   padding: 10px;
   text-align: center;
