@@ -5,6 +5,7 @@ from flask_cors import CORS
 from .extensions import db, jwt
 import os
 
+
 def create_app():
     app = Flask(__name__)
 
@@ -33,6 +34,24 @@ def create_app():
     # ENABLE CORS
     # ==============================
     CORS(app, resources={r"/*": {"origins": "*"}})
+
+    # ==============================
+    # IMPORT ALL MODELS (VERY IMPORTANT)
+    # ==============================
+    from .models.user_model import User
+    from .models.product_model import Product
+    from .models.order_model import Order
+    from .models.order_item_model import OrderItem
+    from .models.payment_model import Payment
+    from .models.delivery_model import Delivery
+    from .models.farmer_model import Farmer
+    from .models.notification_model import Notification
+
+    # ==============================
+    # CREATE TABLES (AUTO CREATE)
+    # ==============================
+    with app.app_context():
+        db.create_all()
 
     # ==============================
     # TEST ROUTES
