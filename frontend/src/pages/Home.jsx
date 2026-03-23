@@ -8,14 +8,22 @@ export default function Home() {
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const res = await API.get("/products");
         setProducts(res.data || []);
+        setError("");
       } catch (err) {
         console.error("Error fetching products:", err);
+
+        if (!err.response) {
+          setError("Server is starting... please wait and refresh");
+        } else {
+          setError("Failed to load products");
+        }
       } finally {
         setLoading(false);
       }
@@ -49,6 +57,17 @@ export default function Home() {
 
   if (loading) {
     return <h2 style={{ textAlign: "center" }}>Loading Products...</h2>;
+  }
+
+  if (error) {
+    return (
+      <div style={{ textAlign: "center", marginTop: "50px" }}>
+        <h2>{error}</h2>
+        <button onClick={() => window.location.reload()}>
+          Retry
+        </button>
+      </div>
+    );
   }
 
   return (
