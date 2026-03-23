@@ -6,7 +6,6 @@ from flask_jwt_extended import create_access_token
 
 auth_bp = Blueprint("auth", __name__)
 
-
 # ==============================
 # REGISTER
 # ==============================
@@ -14,27 +13,23 @@ auth_bp = Blueprint("auth", __name__)
 def register():
     data = request.get_json()
 
-    # Validate input
     if not data:
-        return jsonify({"error": "No input data provided"}), 400
+        return jsonify({"message": "No input data provided"}), 400
 
     name = data.get("name")
     email = data.get("email")
     password = data.get("password")
-    role = data.get("role", "customer")
+    role = data.get("role", "user")
 
     if not name or not email or not password:
-        return jsonify({"error": "Name, email, and password are required"}), 400
+        return jsonify({"message": "All fields required"}), 400
 
-    # Check if email already exists
     existing_user = User.query.filter_by(email=email).first()
     if existing_user:
-        return jsonify({"error": "Email already registered"}), 400
+        return jsonify({"message": "Email already exists"}), 400
 
-    # Hash password
     hashed_password = generate_password_hash(password)
 
-    # Create user
     user = User(
         name=name,
         email=email,
@@ -58,27 +53,23 @@ def register():
 def login():
     data = request.get_json()
 
-    # Validate input
     if not data:
-        return jsonify({"error": "No input data provided"}), 400
+        return jsonify({"message": "No input data"}), 400
 
     email = data.get("email")
     password = data.get("password")
 
     if not email or not password:
-        return jsonify({"error": "Email and password are required"}), 400
+        return jsonify({"message": "Email and password required"}), 400
 
-    # Find user
     user = User.query.filter_by(email=email).first()
 
     if not user:
-        return jsonify({"error": "User not found"}), 404
+        return jsonify({"message": "User not found"}), 404
 
-    # Check password
     if not check_password_hash(user.password, password):
-        return jsonify({"error": "Invalid password"}), 401
+        return jsonify({"message": "Invalid password"}), 401
 
-    # Generate token
     token = create_access_token(identity=user.id)
 
     return jsonify({

@@ -13,15 +13,12 @@ def create_app():
     # CONFIG
     # ==============================
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "secret-key")
-
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-    # ✅ Required for Render PostgreSQL
+    # PostgreSQL SSL (Render)
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "connect_args": {
-            "sslmode": "require"
-        }
+        "connect_args": {"sslmode": "require"}
     }
 
     # ==============================
@@ -31,12 +28,12 @@ def create_app():
     jwt.init_app(app)
 
     # ==============================
-    # ENABLE CORS
+    # CORS
     # ==============================
     CORS(app, resources={r"/*": {"origins": "*"}})
 
     # ==============================
-    # IMPORT ALL MODELS (VERY IMPORTANT)
+    # IMPORT MODELS (IMPORTANT)
     # ==============================
     from .models.user_model import User
     from .models.product_model import Product
@@ -48,7 +45,26 @@ def create_app():
     from .models.notification_model import Notification
 
     # ==============================
-    # CREATE TABLES (AUTO CREATE)
+    # REGISTER BLUEPRINTS (🔥 FIX)
+    # ==============================
+    from .routes.auth_routes import auth_bp
+    from .routes.product_routes import product_bp
+    from .routes.order_routes import order_bp
+    from .routes.user_routes import user_bp
+    from .routes.admin_routes import admin_bp
+    from .routes.farmer_routes import farmer_bp
+    from .routes.payment_routes import payment_bp
+
+    app.register_blueprint(auth_bp, url_prefix="/api/auth")
+    app.register_blueprint(product_bp, url_prefix="/api/products")
+    app.register_blueprint(order_bp, url_prefix="/api/orders")
+    app.register_blueprint(user_bp, url_prefix="/api/user")
+    app.register_blueprint(admin_bp, url_prefix="/api/admin")
+    app.register_blueprint(farmer_bp, url_prefix="/api/farmer")
+    app.register_blueprint(payment_bp, url_prefix="/api/payments")
+
+    # ==============================
+    # CREATE TABLES
     # ==============================
     with app.app_context():
         db.create_all()

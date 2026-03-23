@@ -4,25 +4,39 @@ from app.models.product_model import Product
 
 product_bp = Blueprint("products", __name__)
 
-@product_bp.route("/", methods=["POST"])
+# ==============================
+# ADD PRODUCT
+# ==============================
+@product_bp.route("/products", methods=["POST"])
 def add_product():
-    data = request.json
+    data = request.get_json()
 
-    product = Product(
-        name=data["name"],
-        price_per_kg=data["price_per_kg"],
-        bulk_price=data["bulk_price"],
-        stock=data["stock"],
-        farmer_id=data["farmer_id"]
-    )
+    if not data:
+        return jsonify({"message": "No input data"}), 400
 
-    db.session.add(product)
-    db.session.commit()
+    try:
+        product = Product(
+            name=data.get("name"),
+            price_per_kg=data.get("price_per_kg"),
+            bulk_price=data.get("bulk_price"),
+            stock=data.get("stock"),
+            farmer_id=data.get("farmer_id"),
+            image=data.get("image", "")
+        )
 
-    return jsonify({"message": "Product added"})
+        db.session.add(product)
+        db.session.commit()
+
+        return jsonify({"message": "Product added successfully"}), 201
+
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
 
 
-@product_bp.route("/", methods=["GET"])
+# ==============================
+# GET ALL PRODUCTS
+# ==============================
+@product_bp.route("/products", methods=["GET"])
 def get_products():
     products = Product.query.all()
 
@@ -33,7 +47,8 @@ def get_products():
             "name": p.name,
             "price_per_kg": p.price_per_kg,
             "bulk_price": p.bulk_price,
-            "stock": p.stock
+            "stock": p.stock,
+            "image": getattr(p, "image", "")
         })
 
-    return jsonify(result)
+    return jsonify(result), 200
