@@ -1,18 +1,19 @@
 import { useState, useEffect } from "react";
 import { AuthContext } from "./AuthContext";
 
-export default function AuthProvider({ children }) {
+export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem("user");
+
       if (storedUser) {
         setUser(JSON.parse(storedUser));
       }
     } catch (err) {
-      console.error(err);
+      console.error("User load error:", err);
       localStorage.removeItem("user");
     } finally {
       setLoading(false);
@@ -20,7 +21,7 @@ export default function AuthProvider({ children }) {
   }, []);
 
   const login = (data) => {
-    if (!data?.token || !data?.user) return;
+    if (!data || !data.token || !data.user) return;
 
     localStorage.setItem("token", data.token);
     localStorage.setItem("user", JSON.stringify(data.user));
@@ -49,7 +50,7 @@ export default function AuthProvider({ children }) {
         logout,
         isAdmin,
         isFarmer,
-        isUser
+        isUser,
       }}
     >
       {children}

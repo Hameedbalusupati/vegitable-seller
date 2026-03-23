@@ -1,6 +1,9 @@
-import { createContext } from "react";
+import { createContext, useContext } from "react";
 
-// ==============================
-// CREATE CONTEXT ONLY
-// ==============================
+// Create Context
 export const AuthContext = createContext();
+
+// Custom Hook
+export const useAuth = () => {
+  return useContext(AuthContext);
+};

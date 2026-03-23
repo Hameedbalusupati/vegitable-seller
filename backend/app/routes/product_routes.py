@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, current_app, send_from_directory
+from flask import Blueprint, request, jsonify, send_from_directory
 from app.extensions import db
 from app.models.product_model import Product
 from werkzeug.utils import secure_filename
@@ -10,6 +10,17 @@ product_bp = Blueprint("products", __name__)
 # CONFIG
 # ==============================
 UPLOAD_FOLDER = "uploads"
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
+
+# Create folder if not exists
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+
+# ==============================
+# CHECK FILE TYPE
+# ==============================
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 # ==============================
@@ -18,7 +29,6 @@ UPLOAD_FOLDER = "uploads"
 @product_bp.route("/", methods=["POST"])
 def add_product():
     try:
-        # 🔥 Get form data (NOT JSON)
         name = request.form.get("name")
         price = request.form.get("price_per_kg")
         bulk_price = request.form.get("bulk_price", 0)
@@ -27,22 +37,27 @@ def add_product():
 
         file = request.files.get("image")
 
-        # Validation
+        # ✅ Validation
         if not name or not price:
-            return jsonify({"message": "Name and price_per_kg required"}), 400
+            return jsonify({"message": "Name and price required"}), 400
 
         filename = ""
 
         # ==============================
         # SAVE IMAGE
         # ==============================
-        if file:
-            if not os.path.exists(UPLOAD_FOLDER):
-                os.makedirs(UPLOAD_FOLDER)
-
+        if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
 
+            # Avoid duplicate names
             file_path = os.path.join(UPLOAD_FOLDER, filename)
+            counter = 1
+            while os.path.exists(file_path):
+                name_part, ext = filename.rsplit(".", 1)
+                filename = f"{name_part}_{counter}.{ext}"
+                file_path = os.path.join(UPLOAD_FOLDER, filename)
+                counter += 1
+
             file.save(file_path)
 
         # ==============================
@@ -123,8 +138,8 @@ def delete_product(id):
 
 
 # ==============================
-# SERVE UPLOADED IMAGES
+# SERVE IMAGES (🔥 FIXED URL)
 # ==============================
 @product_bp.route("/uploads/<filename>")
-def uploaded_file(filename):
+def get_image(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)

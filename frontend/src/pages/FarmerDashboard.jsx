@@ -19,10 +19,10 @@ export default function FarmerDashboard() {
   // ==============================
   const fetchProducts = useCallback(async () => {
     try {
-      const res = await API.get("/products");
+      const res = await API.get("/products/");
       setProducts(res.data || []);
     } catch (err) {
-      console.error("Error fetching products", err);
+      console.error("Fetch Products Error:", err);
     }
   }, []);
 
@@ -31,13 +31,16 @@ export default function FarmerDashboard() {
   // ==============================
   const fetchOrders = useCallback(async () => {
     try {
-      const res = await API.get("/orders");
+      const res = await API.get("/orders/");
       setOrders(res.data || []);
     } catch (err) {
-      console.error("Error fetching orders", err);
+      console.error("Fetch Orders Error:", err);
     }
   }, []);
 
+  // ==============================
+  // LOAD DATA
+  // ==============================
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -55,9 +58,9 @@ export default function FarmerDashboard() {
     const { name, value, files } = e.target;
 
     if (name === "image") {
-      setForm({ ...form, image: files[0] });
+      setForm((prev) => ({ ...prev, image: files[0] }));
     } else {
-      setForm({ ...form, [name]: value });
+      setForm((prev) => ({ ...prev, [name]: value }));
     }
   };
 
@@ -83,14 +86,11 @@ export default function FarmerDashboard() {
       formData.append("farmer_id", user?.id);
       formData.append("image", form.image);
 
-      await API.post("/products", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data"
-        }
-      });
+      await API.post("/products/", formData);
 
-      alert("Product added successfully");
+      alert("Product added successfully ✅");
 
+      // Reset form
       setForm({
         name: "",
         price: "",
@@ -98,11 +98,15 @@ export default function FarmerDashboard() {
         image: null
       });
 
+      // Reset file input manually
+      document.querySelector('input[name="image"]').value = "";
+
+      // Refresh products
       fetchProducts();
 
     } catch (err) {
-      console.error("Add error:", err);
-      alert("Failed to add product");
+      console.error("Add Product Error:", err);
+      alert("Failed to add product ❌");
     }
   };
 
@@ -116,7 +120,8 @@ export default function FarmerDashboard() {
       await API.delete(`/products/${id}`);
       fetchProducts();
     } catch (err) {
-      console.error("Delete error:", err);
+      console.error("Delete Error:", err);
+      alert("Failed to delete product");
     }
   };
 
@@ -128,12 +133,12 @@ export default function FarmerDashboard() {
       await API.put(`/orders/${id}`, { status });
       fetchOrders();
     } catch (err) {
-      console.error("Update error:", err);
+      console.error("Update Status Error:", err);
     }
   };
 
   // ==============================
-  // LOADING
+  // LOADING UI
   // ==============================
   if (loading) {
     return <h2 style={{ textAlign: "center" }}>Loading Farmer Data...</h2>;
@@ -173,7 +178,6 @@ export default function FarmerDashboard() {
             onChange={handleChange}
           />
 
-          {/* FILE UPLOAD */}
           <input
             type="file"
             name="image"
@@ -181,7 +185,9 @@ export default function FarmerDashboard() {
             onChange={handleChange}
           />
 
-          <button className="btn btn-green">Add Vegetable</button>
+          <button type="submit" className="btn btn-green">
+            Add Vegetable
+          </button>
         </form>
       </div>
 

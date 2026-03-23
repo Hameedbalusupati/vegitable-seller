@@ -1,9 +1,7 @@
 import { BrowserRouter } from "react-router-dom";
 import AppRoutes from "./routes/AppRoutes";
 
-// ✅ FIX: remove {}
-import AuthProvider from "./context/AuthProvider";
-
+import { AuthProvider } from "./context/AuthProvider";
 import { CartProvider } from "./context/CartContext";
 
 function App() {
