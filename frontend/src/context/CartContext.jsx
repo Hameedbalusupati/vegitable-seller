@@ -1,3 +1,5 @@
+/* eslint-disable react-refresh/only-export-components */
+
 import { createContext, useContext, useState } from "react";
 
 // Create Context
@@ -11,7 +13,6 @@ export const useCart = () => {
 // Provider
 export const CartProvider = ({ children }) => {
 
-  // ✅ Lazy initialization (NO useEffect warning)
   const [cart, setCart] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("cart")) || [];
@@ -21,7 +22,7 @@ export const CartProvider = ({ children }) => {
   });
 
   // ==============================
-  // UPDATE LOCAL STORAGE
+  // SAVE CART
   // ==============================
   const saveCart = (newCart) => {
     setCart(newCart);
@@ -34,7 +35,9 @@ export const CartProvider = ({ children }) => {
   const addToCart = (product) => {
     let updated = [...cart];
 
-    const existing = updated.find((item) => item.id === product.id);
+    const existing = updated.find(
+      (item) => item.id === product.id || item._id === product._id
+    );
 
     if (existing) {
       existing.quantity += 1;
@@ -46,19 +49,21 @@ export const CartProvider = ({ children }) => {
   };
 
   // ==============================
-  // REMOVE ITEM
+  // REMOVE
   // ==============================
   const removeFromCart = (id) => {
-    const updated = cart.filter((item) => item.id !== id);
+    const updated = cart.filter(
+      (item) => item.id !== id && item._id !== id
+    );
     saveCart(updated);
   };
 
   // ==============================
-  // INCREASE QTY
+  // INCREASE
   // ==============================
   const increaseQty = (id) => {
     const updated = cart.map((item) =>
-      item.id === id
+      item.id === id || item._id === id
         ? { ...item, quantity: item.quantity + 1 }
         : item
     );
@@ -66,12 +71,12 @@ export const CartProvider = ({ children }) => {
   };
 
   // ==============================
-  // DECREASE QTY
+  // DECREASE
   // ==============================
   const decreaseQty = (id) => {
     const updated = cart
       .map((item) =>
-        item.id === id
+        item.id === id || item._id === id
           ? { ...item, quantity: item.quantity - 1 }
           : item
       )
@@ -81,7 +86,7 @@ export const CartProvider = ({ children }) => {
   };
 
   // ==============================
-  // CLEAR CART
+  // CLEAR
   // ==============================
   const clearCart = () => {
     saveCart([]);
@@ -91,7 +96,10 @@ export const CartProvider = ({ children }) => {
   // TOTAL PRICE
   // ==============================
   const totalPrice = cart.reduce(
-    (sum, item) => sum + item.price_retail * item.quantity,
+    (sum, item) =>
+      sum +
+      (item.price_retail || item.price_per_kg || item.price || 0) *
+        item.quantity,
     0
   );
 

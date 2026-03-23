@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import API from "../services/api";
 import Footer from "../components/Footer";
@@ -10,36 +10,46 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const fetchProducts = async (retry = 0) => {
+  // ==============================
+  // FETCH PRODUCTS (FIXED)
+  // ==============================
+  const fetchProducts = useCallback(async (retry = 0) => {
     try {
-      const res = await API.get("/products");
+      const res = await API.get("/products/");
       setProducts(res.data || []);
       setError("");
     } catch (err) {
       console.log("Fetch error:", err);
 
-      // 🔥 Retry logic (IMPORTANT)
       if (retry < 3) {
         setTimeout(() => {
           fetchProducts(retry + 1);
-        }, 5000); // retry after 5 sec
+        }, 5000);
       } else {
         setError("Server is waking up... please click retry");
       }
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchProducts();
   }, []);
 
+  // ==============================
+  // USE EFFECT (FIXED)
+  // ==============================
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
+  // ==============================
+  // ADD TO CART
+  // ==============================
   const addToCart = (product) => {
     try {
       let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-      const existing = cart.find((item) => item._id === product._id);
+      const existing = cart.find(
+        (item) => item._id === product._id || item.id === product.id
+      );
 
       if (existing) {
         existing.quantity += 1;
@@ -54,8 +64,13 @@ export default function Home() {
     }
   };
 
-  const filteredProducts = products.filter((p) =>
-    p.name && p.name.toLowerCase().includes(search.toLowerCase())
+  // ==============================
+  // SEARCH FILTER
+  // ==============================
+  const filteredProducts = products.filter(
+    (p) =>
+      p.name &&
+      p.name.toLowerCase().includes(search.toLowerCase())
   );
 
   // ==============================
@@ -127,13 +142,13 @@ export default function Home() {
             <p>No products found</p>
           ) : (
             filteredProducts.map((p) => (
-              <div key={p._id} className="product-card">
+              <div key={p._id || p.id} className="product-card">
                 <img
                   src={p.image || "https://via.placeholder.com/150"}
                   alt={p.name}
                 />
                 <h3>{p.name}</h3>
-                <p>₹{p.price_retail || p.price}</p>
+                <p>₹{p.price_retail || p.price_per_kg}</p>
 
                 <button onClick={() => addToCart(p)}>
                   Add to Cart
