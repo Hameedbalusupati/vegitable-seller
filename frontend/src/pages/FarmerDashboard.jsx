@@ -11,21 +11,27 @@ export default function FarmerDashboard() {
     name: "",
     price: "",
     stock: "",
-    image: ""
+    image: null
   });
 
+  // ==============================
+  // FETCH PRODUCTS
+  // ==============================
   const fetchProducts = useCallback(async () => {
     try {
-      const res = await API.get("/farmer/products");
+      const res = await API.get("/products");
       setProducts(res.data || []);
     } catch (err) {
       console.error("Error fetching products", err);
     }
   }, []);
 
+  // ==============================
+  // FETCH ORDERS
+  // ==============================
   const fetchOrders = useCallback(async () => {
     try {
-      const res = await API.get("/farmer/orders");
+      const res = await API.get("/orders");
       setOrders(res.data || []);
     } catch (err) {
       console.error("Error fetching orders", err);
@@ -42,57 +48,93 @@ export default function FarmerDashboard() {
     loadData();
   }, [fetchProducts, fetchOrders]);
 
+  // ==============================
+  // HANDLE INPUT CHANGE
+  // ==============================
   const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value
-    });
+    const { name, value, files } = e.target;
+
+    if (name === "image") {
+      setForm({ ...form, image: files[0] });
+    } else {
+      setForm({ ...form, [name]: value });
+    }
   };
 
+  // ==============================
+  // ADD PRODUCT (FILE UPLOAD)
+  // ==============================
   const addProduct = async (e) => {
     e.preventDefault();
 
-    if (!form.name || !form.price || !form.stock) {
-      alert("Please fill all fields");
+    if (!form.name || !form.price || !form.stock || !form.image) {
+      alert("Please fill all fields including image");
       return;
     }
 
     try {
-      await API.post("/farmer/products", form);
+      const user = JSON.parse(localStorage.getItem("user"));
+
+      const formData = new FormData();
+      formData.append("name", form.name);
+      formData.append("price_per_kg", form.price);
+      formData.append("bulk_price", 0);
+      formData.append("stock", form.stock);
+      formData.append("farmer_id", user?.id);
+      formData.append("image", form.image);
+
+      await API.post("/products", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data"
+        }
+      });
+
+      alert("Product added successfully");
 
       setForm({
         name: "",
         price: "",
         stock: "",
-        image: ""
+        image: null
       });
 
       fetchProducts();
+
     } catch (err) {
       console.error("Add error:", err);
+      alert("Failed to add product");
     }
   };
 
+  // ==============================
+  // DELETE PRODUCT
+  // ==============================
   const deleteProduct = async (id) => {
     if (!window.confirm("Delete this product?")) return;
 
     try {
-      await API.delete(`/farmer/products/${id}`);
+      await API.delete(`/products/${id}`);
       fetchProducts();
     } catch (err) {
       console.error("Delete error:", err);
     }
   };
 
+  // ==============================
+  // UPDATE ORDER STATUS
+  // ==============================
   const updateStatus = async (id, status) => {
     try {
-      await API.put(`/farmer/orders/${id}`, { status });
+      await API.put(`/orders/${id}`, { status });
       fetchOrders();
     } catch (err) {
       console.error("Update error:", err);
     }
   };
 
+  // ==============================
+  // LOADING
+  // ==============================
   if (loading) {
     return <h2 style={{ textAlign: "center" }}>Loading Farmer Data...</h2>;
   }
@@ -101,6 +143,9 @@ export default function FarmerDashboard() {
     <div className="farmer-dashboard">
       <h1>Farmer Dashboard</h1>
 
+      {/* ============================== */}
+      {/* ADD PRODUCT */}
+      {/* ============================== */}
       <div className="card">
         <h2>Add Your Vegetable</h2>
 
@@ -115,7 +160,7 @@ export default function FarmerDashboard() {
           <input
             type="number"
             name="price"
-            placeholder="Price"
+            placeholder="Price per kg"
             value={form.price}
             onChange={handleChange}
           />
@@ -128,10 +173,11 @@ export default function FarmerDashboard() {
             onChange={handleChange}
           />
 
+          {/* FILE UPLOAD */}
           <input
+            type="file"
             name="image"
-            placeholder="Image URL"
-            value={form.image}
+            accept="image/*"
             onChange={handleChange}
           />
 
@@ -139,6 +185,9 @@ export default function FarmerDashboard() {
         </form>
       </div>
 
+      {/* ============================== */}
+      {/* PRODUCTS */}
+      {/* ============================== */}
       <div className="card">
         <h2>Your Products</h2>
 
@@ -147,18 +196,23 @@ export default function FarmerDashboard() {
             <p>No products added</p>
           ) : (
             products.map((p) => (
-              <div key={p._id} className="product-card">
+              <div key={p.id} className="product-card">
                 <img
-                  src={p.image || "https://via.placeholder.com/150"}
+                  src={
+                    p.image
+                      ? `https://vegitable-seller.onrender.com/uploads/${p.image}`
+                      : "https://via.placeholder.com/150"
+                  }
                   alt={p.name}
                 />
+
                 <h3>{p.name}</h3>
-                <p>₹{p.price}</p>
+                <p>₹{p.price_per_kg}</p>
                 <p>Stock: {p.stock}</p>
 
                 <button
                   className="btn btn-red"
-                  onClick={() => deleteProduct(p._id)}
+                  onClick={() => deleteProduct(p.id)}
                 >
                   Delete
                 </button>
@@ -168,6 +222,9 @@ export default function FarmerDashboard() {
         </div>
       </div>
 
+      {/* ============================== */}
+      {/* ORDERS */}
+      {/* ============================== */}
       <div className="card">
         <h2>Orders</h2>
 
@@ -189,22 +246,22 @@ export default function FarmerDashboard() {
               </tr>
             ) : (
               orders.map((o) => (
-                <tr key={o._id}>
-                  <td>{o._id}</td>
+                <tr key={o.id}>
+                  <td>{o.id}</td>
                   <td>{o.user_id}</td>
-                  <td>₹{o.total_amount}</td>
+                  <td>₹{o.total_price}</td>
                   <td>{o.status}</td>
                   <td>
                     <button
                       className="btn btn-blue"
-                      onClick={() => updateStatus(o._id, "Packed")}
+                      onClick={() => updateStatus(o.id, "Packed")}
                     >
                       Pack
                     </button>
 
                     <button
                       className="btn btn-green"
-                      onClick={() => updateStatus(o._id, "Shipped")}
+                      onClick={() => updateStatus(o.id, "Shipped")}
                       style={{ marginLeft: "5px" }}
                     >
                       Ship

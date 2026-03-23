@@ -1,6 +1,4 @@
-# backend/app/__init__.py
-
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_cors import CORS
 from .extensions import db, jwt
 import os
@@ -13,13 +11,27 @@ def create_app():
     # CONFIG
     # ==============================
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "secret-key")
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
+
+    # 🔥 FIX: Render postgres needs this
+    database_url = os.getenv("DATABASE_URL")
+
+    if database_url and database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://")
+
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-    # PostgreSQL SSL (Render)
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
         "connect_args": {"sslmode": "require"}
     }
+
+    # ==============================
+    # UPLOAD FOLDER (🔥 IMPORTANT)
+    # ==============================
+    app.config["UPLOAD_FOLDER"] = os.path.join(os.getcwd(), "uploads")
+
+    if not os.path.exists(app.config["UPLOAD_FOLDER"]):
+        os.makedirs(app.config["UPLOAD_FOLDER"])
 
     # ==============================
     # INIT EXTENSIONS
@@ -33,7 +45,7 @@ def create_app():
     CORS(app, resources={r"/*": {"origins": "*"}})
 
     # ==============================
-    # IMPORT MODELS (IMPORTANT)
+    # IMPORT MODELS
     # ==============================
     from .models.user_model import User
     from .models.product_model import Product
@@ -45,7 +57,7 @@ def create_app():
     from .models.notification_model import Notification
 
     # ==============================
-    # REGISTER BLUEPRINTS (🔥 FIX)
+    # REGISTER BLUEPRINTS
     # ==============================
     from .routes.auth_routes import auth_bp
     from .routes.product_routes import product_bp
@@ -68,6 +80,13 @@ def create_app():
     # ==============================
     with app.app_context():
         db.create_all()
+
+    # ==============================
+    # SERVE UPLOADED IMAGES
+    # ==============================
+    @app.route("/uploads/<filename>")
+    def uploaded_file(filename):
+        return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
     # ==============================
     # TEST ROUTES
