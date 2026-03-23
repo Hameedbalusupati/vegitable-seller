@@ -72,20 +72,22 @@ export default function FarmerDashboard() {
   const addProduct = async (e) => {
     e.preventDefault();
 
-    if (!form.name || !form.price || !form.stock || !form.image) {
-      alert("Please fill all fields including image");
-      return;
-    }
-
     try {
       const user = JSON.parse(localStorage.getItem("user"));
 
+      if (!form.name.trim()) return alert("Enter product name");
+      if (!form.price || Number(form.price) <= 0)
+        return alert("Enter valid price");
+      if (!form.stock || Number(form.stock) <= 0)
+        return alert("Enter valid stock");
+      if (!form.image) return alert("Select image");
+
       const formData = new FormData();
-      formData.append("name", form.name);
-      formData.append("price_per_kg", form.price);
+      formData.append("name", form.name.trim());
+      formData.append("price_per_kg", Number(form.price));
       formData.append("bulk_price", 0);
-      formData.append("stock", form.stock);
-      formData.append("farmer_id", user?.id);
+      formData.append("stock", Number(form.stock));
+      formData.append("farmer_id", user?.id || 1);
       formData.append("image", form.image);
 
       await API.post("/products/", formData, {
@@ -94,7 +96,7 @@ export default function FarmerDashboard() {
         }
       });
 
-      alert("Product added successfully ✅");
+      alert("✅ Product added successfully");
 
       setForm({
         name: "",
@@ -108,7 +110,7 @@ export default function FarmerDashboard() {
       fetchProducts();
 
     } catch (err) {
-      console.error("FULL ERROR:", err.response?.data || err);
+      console.error("❌ ERROR:", err.response?.data || err);
       alert(err.response?.data?.message || "Failed to add product ❌");
     }
   };
@@ -141,10 +143,10 @@ export default function FarmerDashboard() {
   };
 
   // ==============================
-  // LOADING UI
+  // LOADING
   // ==============================
   if (loading) {
-    return <h2 style={{ textAlign: "center" }}>Loading Farmer Data...</h2>;
+    return <h2 style={{ textAlign: "center" }}>Loading...</h2>;
   }
 
   return (
@@ -210,7 +212,6 @@ export default function FarmerDashboard() {
                   }
                   alt={p.name}
                 />
-
                 <h3>{p.name}</h3>
                 <p>₹{p.price_per_kg}</p>
                 <p>Stock: {p.stock}</p>
@@ -256,15 +257,15 @@ export default function FarmerDashboard() {
                   <td>{o.status}</td>
                   <td>
                     <button
-                      className="btn btn-blue"
                       onClick={() => updateStatus(o.id, "Packed")}
+                      className="btn btn-blue"
                     >
                       Pack
                     </button>
 
                     <button
-                      className="btn btn-green"
                       onClick={() => updateStatus(o.id, "Shipped")}
+                      className="btn btn-green"
                       style={{ marginLeft: "5px" }}
                     >
                       Ship

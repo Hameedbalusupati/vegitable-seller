@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, send_from_directory
+from flask import Blueprint, request, jsonify, send_from_directory, current_app
 from app.extensions import db
 from app.models.product_model import Product
 from werkzeug.utils import secure_filename
@@ -7,13 +7,9 @@ import os
 product_bp = Blueprint("products", __name__)
 
 # ==============================
-# CONFIG (🔥 FIX FOR RENDER)
+# CONFIG
 # ==============================
-UPLOAD_FOLDER = "/tmp/uploads"   # ✅ IMPORTANT FIX
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
-
-# Create folder
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
 # ==============================
@@ -29,6 +25,7 @@ def allowed_file(filename):
 @product_bp.route("/", methods=["POST"])
 def add_product():
     try:
+        # ✅ GET FORM DATA
         name = request.form.get("name")
         price = request.form.get("price_per_kg")
         bulk_price = request.form.get("bulk_price", 0)
@@ -37,32 +34,45 @@ def add_product():
 
         file = request.files.get("image")
 
-        # ✅ Validation
+        # ==============================
+        # VALIDATION (🔥 FIXED)
+        # ==============================
         if not name or not price:
             return jsonify({"message": "Name and price required"}), 400
+
+        try:
+            price = float(price)
+            stock = int(stock)
+        except:
+            return jsonify({"message": "Invalid number format"}), 400
+
+        if price <= 0:
+            return jsonify({"message": "Price must be greater than 0"}), 400
 
         filename = ""
 
         # ==============================
-        # SAVE IMAGE
+        # SAVE IMAGE (🔥 RENDER SAFE)
         # ==============================
+        upload_folder = current_app.config["UPLOAD_FOLDER"]
+
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
 
-            # Avoid duplicate names
-            file_path = os.path.join(UPLOAD_FOLDER, filename)
-            counter = 1
+            file_path = os.path.join(upload_folder, filename)
 
+            # avoid duplicate names
+            counter = 1
             while os.path.exists(file_path):
                 name_part, ext = filename.rsplit(".", 1)
                 filename = f"{name_part}_{counter}.{ext}"
-                file_path = os.path.join(UPLOAD_FOLDER, filename)
+                file_path = os.path.join(upload_folder, filename)
                 counter += 1
 
             file.save(file_path)
 
         # ==============================
-        # SAVE PRODUCT
+        # SAVE TO DATABASE
         # ==============================
         product = Product(
             name=name,
@@ -83,7 +93,7 @@ def add_product():
                 "name": product.name,
                 "price_per_kg": product.price_per_kg,
                 "stock": product.stock,
-                "image": product.image
+                "image": f"/api/uploads/{filename}" if filename else ""
             }
         }), 201
 
@@ -108,8 +118,7 @@ def get_products():
                 "price_per_kg": p.price_per_kg,
                 "bulk_price": p.bulk_price,
                 "stock": p.stock,
-                # ✅ return full image URL
-                "image": f"/api/products/uploads/{p.image}" if p.image else ""
+                "image": f"/api/uploads/{p.image}" if p.image else ""
             })
 
         return jsonify(result), 200
@@ -144,4 +153,8 @@ def delete_product(id):
 # ==============================
 @product_bp.route("/uploads/<filename>")
 def get_image(filename):
-    return send_from_directory(UPLOAD_FOLDER, filename)
+    try:
+        upload_folder = current_app.config["UPLOAD_FOLDER"]
+        return send_from_directory(upload_folder, filename)
+    except Exception as e:
+        return jsonify({"message": str(e)}), 404
