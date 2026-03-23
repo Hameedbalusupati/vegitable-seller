@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import API from "../services/api"; // ✅ FIXED
+import API from "../services/api";
 import "./Products.css";
 
 export default function Products() {
@@ -12,11 +12,17 @@ export default function Products() {
   // ==============================
   const fetchProducts = useCallback(async () => {
     try {
-      const res = await API.get("/products"); // ✅ FIXED
+      const res = await API.get("/products");
       setProducts(res.data || []);
     } catch (err) {
       console.error("Error fetching products:", err);
-      alert("❌ Failed to load products");
+
+      // 🔥 Handle Render sleep
+      if (!err.response) {
+        console.log("Backend waking up...");
+      } else {
+        console.log("Failed to load products");
+      }
     }
   }, []);
 
@@ -40,7 +46,7 @@ export default function Products() {
     try {
       let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-      const existing = cart.find((item) => item.id === product.id);
+      const existing = cart.find((item) => item._id === product._id); // ✅ FIXED
 
       if (existing) {
         existing.quantity += 1;
@@ -49,7 +55,7 @@ export default function Products() {
       }
 
       localStorage.setItem("cart", JSON.stringify(cart));
-      alert("✅ Added to cart");
+      alert("Added to cart");
     } catch (err) {
       console.error("Cart error:", err);
     }
@@ -71,7 +77,7 @@ export default function Products() {
 
   return (
     <div className="products-container">
-      <h1>🥦 All Vegetables</h1>
+      <h1>All Vegetables</h1>
 
       {/* SEARCH */}
       <input
@@ -88,7 +94,7 @@ export default function Products() {
           <p>No vegetables found</p>
         ) : (
           filteredProducts.map((p) => (
-            <div key={p.id} className="product-card">
+            <div key={p._id} className="product-card"> {/* ✅ FIXED */}
               <img
                 src={p.image || "https://via.placeholder.com/150"}
                 alt={p.name}

@@ -6,9 +6,19 @@ import API from "./api";
 export const createOrder = async (orderData) => {
   try {
     const res = await API.post("/orders", orderData);
+
+    if (!res.data) {
+      throw new Error("Invalid response from server");
+    }
+
     return res.data;
   } catch (error) {
     console.error("Create order error:", error);
+
+    if (!error.response) {
+      throw new Error("Server is starting, please try again");
+    }
+
     throw error;
   }
 };
@@ -19,9 +29,15 @@ export const createOrder = async (orderData) => {
 export const getMyOrders = async () => {
   try {
     const res = await API.get("/orders/my");
-    return res.data;
+
+    return res.data || [];
   } catch (error) {
     console.error("Get my orders error:", error);
+
+    if (!error.response) {
+      throw new Error("Server is starting, please wait");
+    }
+
     throw error;
   }
 };
@@ -32,9 +48,15 @@ export const getMyOrders = async () => {
 export const getAllOrders = async () => {
   try {
     const res = await API.get("/orders");
-    return res.data;
+
+    return res.data || [];
   } catch (error) {
     console.error("Get all orders error:", error);
+
+    if (!error.response) {
+      throw new Error("Server is starting, please wait");
+    }
+
     throw error;
   }
 };
@@ -44,10 +66,20 @@ export const getAllOrders = async () => {
 // ==============================
 export const updateOrderStatus = async (id, status) => {
   try {
+    if (!id || !status) {
+      throw new Error("Invalid input");
+    }
+
     const res = await API.put(`/orders/${id}`, { status });
+
     return res.data;
   } catch (error) {
     console.error("Update order error:", error);
+
+    if (!error.response) {
+      throw new Error("Server is starting, try again");
+    }
+
     throw error;
   }
 };
@@ -57,10 +89,20 @@ export const updateOrderStatus = async (id, status) => {
 // ==============================
 export const deleteOrder = async (id) => {
   try {
+    if (!id) {
+      throw new Error("Order ID is required");
+    }
+
     const res = await API.delete(`/orders/${id}`);
+
     return res.data;
   } catch (error) {
     console.error("Delete order error:", error);
+
+    if (!error.response) {
+      throw new Error("Server is starting, try again");
+    }
+
     throw error;
   }
 };

@@ -2,51 +2,54 @@ import React from "react";
 import "./CartItem.css";
 
 const CartItem = ({ item, onIncrease, onDecrease, onRemove }) => {
+  if (!item) return null;
+
   const {
-    id,
+    _id,
     name,
     price_per_kg,
     bulk_price,
+    price_retail,
+    price,
     quantity,
     type,
     image
   } = item;
 
-  const price = type === "kg" ? price_per_kg : bulk_price;
-  const total = price * quantity;
+  const unitPrice =
+    type === "kg"
+      ? price_per_kg || price_retail || price || 0
+      : bulk_price || price_retail || price || 0;
+
+  const total = unitPrice * quantity;
 
   return (
     <div className="cart-item">
 
-      {/* Image */}
       <img
         src={image || "https://via.placeholder.com/80"}
         alt={name}
         className="cart-item-img"
       />
 
-      {/* Details */}
       <div className="cart-item-details">
         <h3>{name}</h3>
         <p>Type: {type}</p>
-        <p>Price: ₹{price}</p>
+        <p>Price: ₹{unitPrice}</p>
       </div>
 
-      {/* Quantity Controls */}
       <div className="cart-item-qty">
-        <button onClick={() => onDecrease(id)}>-</button>
+        <button onClick={() => onDecrease(_id)}>-</button>
         <span>{quantity}</span>
-        <button onClick={() => onIncrease(id)}>+</button>
+        <button onClick={() => onIncrease(_id)}>+</button>
       </div>
 
-      {/* Total */}
       <div className="cart-item-total">
         ₹{total}
       </div>
 
-      {/* Remove */}
-      <button className="remove-btn" onClick={() => onRemove(id)}>
-        ❌
+      <button className="remove-btn" onClick={() => onRemove(_id)}>
+        Remove
       </button>
 
     </div>

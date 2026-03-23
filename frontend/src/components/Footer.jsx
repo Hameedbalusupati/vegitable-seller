@@ -3,20 +3,20 @@ import "./Footer.css";
 import { Link } from "react-router-dom";
 
 const Footer = () => {
+  const year = new Date().getFullYear();
+
   return (
     <footer className="footer">
       <div className="footer-container">
 
-        {/* Logo & About */}
         <div className="footer-section">
-          <h2 className="footer-logo">🌱 VegMarket</h2>
+          <h2 className="footer-logo">VegMarket</h2>
           <p>
             Fresh vegetables directly from farmers to your home.
             Healthy, organic, and affordable.
           </p>
         </div>
 
-        {/* Quick Links */}
         <div className="footer-section">
           <h3>Quick Links</h3>
           <ul>
@@ -27,7 +27,6 @@ const Footer = () => {
           </ul>
         </div>
 
-        {/* Contact */}
         <div className="footer-section">
           <h3>Contact</h3>
           <p>Email: support@vegmarket.com</p>
@@ -35,22 +34,20 @@ const Footer = () => {
           <p>Location: India</p>
         </div>
 
-        {/* Social */}
         <div className="footer-section">
           <h3>Follow Us</h3>
           <div className="social-icons">
-            <a href="#">🌐</a>
-            <a href="#">📘</a>
-            <a href="#">📸</a>
-            <a href="#">🐦</a>
+            <a href="https://example.com" target="_blank" rel="noopener noreferrer">🌐</a>
+            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer">📘</a>
+            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">📸</a>
+            <a href="https://twitter.com" target="_blank" rel="noopener noreferrer">🐦</a>
           </div>
         </div>
 
       </div>
 
-      {/* Bottom */}
       <div className="footer-bottom">
-        <p>© {new Date().getFullYear()} VegMarket. All rights reserved.</p>
+        <p>© {year} VegMarket. All rights reserved.</p>
       </div>
     </footer>
   );

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import API from "../services/api"; // ✅ FIXED
+import API from "../services/api";
 import "./Login.css";
 
 export default function Login() {
@@ -17,10 +17,10 @@ export default function Login() {
   // HANDLE INPUT
   // ==============================
   const handleChange = (e) => {
-    setForm((prev) => ({
-      ...prev,
+    setForm({
+      ...form,
       [e.target.name]: e.target.value
-    }));
+    });
   };
 
   // ==============================
@@ -30,27 +30,38 @@ export default function Login() {
     e.preventDefault();
 
     if (!form.email || !form.password) {
-      alert("⚠️ Please fill all fields");
+      alert("Please fill all fields");
       return;
     }
 
     try {
       setLoading(true);
 
-      const res = await API.post("/login", form); // ✅ FIXED
+      // 🔥 TRY CORRECT ENDPOINT
+      const res = await API.post("/auth/login", form); 
+      // 👉 if this fails, change to "/login"
 
-      // ✅ Save token + user
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      const { token, user } = res.data;
 
-      alert("✅ Login Successful");
+      if (!token || !user) {
+        alert("Invalid server response");
+        return;
+      }
 
-      // ✅ Redirect based on role
-      const role = res.data.user?.role;
+      // ==============================
+      // SAVE DATA
+      // ==============================
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
 
-      if (role === "admin") {
+      alert("Login Successful");
+
+      // ==============================
+      // ROLE BASED REDIRECT
+      // ==============================
+      if (user.role === "admin") {
         navigate("/admin");
-      } else if (role === "farmer") {
+      } else if (user.role === "farmer") {
         navigate("/farmer");
       } else {
         navigate("/");
@@ -59,11 +70,18 @@ export default function Login() {
     } catch (err) {
       console.error("Login error:", err);
 
+      // 🔥 Handle Render sleep
+      if (!err.response) {
+        alert("Server is starting... try again in a few seconds.");
+        return;
+      }
+
       if (err.response?.data?.message) {
         alert(err.response.data.message);
       } else {
-        alert("❌ Invalid email or password");
+        alert("Invalid email or password");
       }
+
     } finally {
       setLoading(false);
     }
@@ -72,7 +90,7 @@ export default function Login() {
   return (
     <div className="login-container">
       <form className="login-card" onSubmit={handleLogin}>
-        <h2>Login 🔐</h2>
+        <h2>Login</h2>
 
         <input
           type="email"
@@ -80,7 +98,6 @@ export default function Login() {
           placeholder="Enter Email"
           value={form.email}
           onChange={handleChange}
-          required
         />
 
         <input
@@ -89,11 +106,10 @@ export default function Login() {
           placeholder="Enter Password"
           value={form.password}
           onChange={handleChange}
-          required
         />
 
         <button type="submit" disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
+          {loading ? "⏳ Logging in..." : "Login"}
         </button>
 
         <p>

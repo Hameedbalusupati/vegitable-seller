@@ -1,27 +1,26 @@
 import { useEffect, useState, useCallback } from "react";
-import API from "../services/api"; // ✅ FIXED
+import API from "../services/api";
 import "./Order.css";
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ==============================
-  // FETCH ORDERS
-  // ==============================
   const fetchOrders = useCallback(async () => {
     try {
-      const res = await API.get("/orders/my"); // ✅ FIXED
+      const res = await API.get("/orders/my");
       setOrders(res.data || []);
     } catch (err) {
       console.error("Error fetching orders:", err);
-      alert("❌ Failed to load orders");
+
+      if (!err.response) {
+        console.log("Backend waking up...");
+      } else {
+        console.log("Failed to load orders");
+      }
     }
   }, []);
 
-  // ==============================
-  // LOAD DATA
-  // ==============================
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -32,9 +31,6 @@ export default function Orders() {
     loadData();
   }, [fetchOrders]);
 
-  // ==============================
-  // STATUS STYLE
-  // ==============================
   const getStatusClass = (status) => {
     switch (status) {
       case "Pending":
@@ -50,27 +46,23 @@ export default function Orders() {
     }
   };
 
-  // ==============================
-  // LOADING
-  // ==============================
   if (loading) {
     return <h2 className="loading">Loading Orders...</h2>;
   }
 
   return (
     <div className="orders-container">
-      <h1>📦 My Orders</h1>
+      <h1>My Orders</h1>
 
       {orders.length === 0 ? (
         <h2 className="empty">No orders found</h2>
       ) : (
         orders.map((order) => (
-          <div key={order.id} className="order-card">
+          <div key={order._id} className="order-card">
 
-            {/* ORDER HEADER */}
             <div className="order-header">
               <div>
-                <p><strong>Order ID:</strong> {order.id}</p>
+                <p><strong>Order ID:</strong> {order._id}</p>
                 <p><strong>Total:</strong> ₹{order.total_amount}</p>
               </div>
 
@@ -79,7 +71,6 @@ export default function Orders() {
               </div>
             </div>
 
-            {/* ITEMS */}
             <div className="order-items">
               {order.items && order.items.length > 0 ? (
                 order.items.map((item, i) => (
@@ -92,7 +83,7 @@ export default function Orders() {
                     <div>
                       <h4>{item.name}</h4>
                       <p>
-                        ₹{item.price || item.price_retail} × {item.quantity}
+                        ₹{item.price || item.price_retail} x {item.quantity}
                       </p>
                     </div>
                   </div>

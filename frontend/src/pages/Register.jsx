@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import API from "../services/api"; // ✅ FIXED
+import API from "../services/api";
 import "./Register.css";
 
 export default function Register() {
@@ -20,10 +20,10 @@ export default function Register() {
   // HANDLE INPUT
   // ==============================
   const handleChange = (e) => {
-    setForm((prev) => ({
-      ...prev,
+    setForm({
+      ...form,
       [e.target.name]: e.target.value
-    }));
+    });
   };
 
   // ==============================
@@ -33,36 +33,47 @@ export default function Register() {
     e.preventDefault();
 
     if (!form.name || !form.email || !form.password) {
-      alert("⚠️ Please fill all fields");
+      alert("Please fill all fields");
       return;
     }
 
     if (form.password.length < 6) {
-      alert("⚠️ Password must be at least 6 characters");
+      alert("Password must be at least 6 characters");
       return;
     }
 
     if (form.password !== form.confirmPassword) {
-      alert("⚠️ Passwords do not match");
+      alert("Passwords do not match");
       return;
     }
 
     try {
       setLoading(true);
 
-      const res = await API.post("/register", {
+      // 🔥 TRY CORRECT ENDPOINT
+      const res = await API.post("/auth/register", {
         name: form.name,
         email: form.email,
         password: form.password,
         role: form.role
-      }); // ✅ FIXED
+      });
+      // 👉 if fails, try "/register"
 
-      alert("✅ Registration Successful");
+      const { token, user, message } = res.data;
 
-      // Optional auto login
-      if (res.data?.token) {
-        localStorage.setItem("token", res.data.token);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
+      if (!res.data) {
+        alert("Invalid server response");
+        return;
+      }
+
+      alert(message || "Registration Successful");
+
+      // ==============================
+      // OPTIONAL AUTO LOGIN
+      // ==============================
+      if (token && user) {
+        localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(user));
       }
 
       navigate("/login");
@@ -70,11 +81,18 @@ export default function Register() {
     } catch (err) {
       console.error("Register error:", err);
 
+      // 🔥 Handle Render sleep
+      if (!err.response) {
+        alert("⏳ Server is starting... please try again.");
+        return;
+      }
+
       if (err.response?.data?.message) {
         alert(err.response.data.message);
       } else {
-        alert("❌ Registration failed (Email may already exist)");
+        alert("Registration failed (Email may already exist)");
       }
+
     } finally {
       setLoading(false);
     }
@@ -83,7 +101,7 @@ export default function Register() {
   return (
     <div className="register-container">
       <form className="register-card" onSubmit={handleRegister}>
-        <h2>Register 📝</h2>
+        <h2>Register</h2>
 
         <input
           type="text"
@@ -91,7 +109,6 @@ export default function Register() {
           placeholder="Full Name"
           value={form.name}
           onChange={handleChange}
-          required
         />
 
         <input
@@ -100,7 +117,6 @@ export default function Register() {
           placeholder="Email Address"
           value={form.email}
           onChange={handleChange}
-          required
         />
 
         <input
@@ -109,7 +125,6 @@ export default function Register() {
           placeholder="Password"
           value={form.password}
           onChange={handleChange}
-          required
         />
 
         <input
@@ -118,7 +133,6 @@ export default function Register() {
           placeholder="Confirm Password"
           value={form.confirmPassword}
           onChange={handleChange}
-          required
         />
 
         {/* ROLE SELECT */}

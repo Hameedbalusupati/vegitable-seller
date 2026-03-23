@@ -5,15 +5,25 @@ import API from "./api";
 // ==============================
 export const loginUser = async (data) => {
   try {
-    const res = await API.post("/login", data);
+    const res = await API.post("/auth/login", data);
 
-    // Save token & user
-    localStorage.setItem("token", res.data.token);
-    localStorage.setItem("user", JSON.stringify(res.data.user));
+    const { token, user } = res.data || {};
+
+    if (!token || !user) {
+      throw new Error("Invalid login response");
+    }
+
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(user));
 
     return res.data;
   } catch (error) {
     console.error("Login error:", error);
+
+    if (!error.response) {
+      throw new Error("Server is starting, try again");
+    }
+
     throw error;
   }
 };
@@ -23,17 +33,23 @@ export const loginUser = async (data) => {
 // ==============================
 export const registerUser = async (data) => {
   try {
-    const res = await API.post("/register", data);
+    const res = await API.post("/auth/register", data);
 
-    // Optional auto login
-    if (res.data.token) {
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+    const { token, user } = res.data || {};
+
+    if (token && user) {
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
     }
 
     return res.data;
   } catch (error) {
     console.error("Register error:", error);
+
+    if (!error.response) {
+      throw new Error("Server is starting, try again");
+    }
+
     throw error;
   }
 };
@@ -51,7 +67,8 @@ export const logoutUser = () => {
 // ==============================
 export const getCurrentUser = () => {
   try {
-    return JSON.parse(localStorage.getItem("user"));
+    const user = localStorage.getItem("user");
+    return user ? JSON.parse(user) : null;
   } catch {
     return null;
   }
@@ -61,12 +78,16 @@ export const getCurrentUser = () => {
 // GET TOKEN
 // ==============================
 export const getToken = () => {
-  return localStorage.getItem("token");
+  try {
+    return localStorage.getItem("token") || null;
+  } catch {
+    return null;
+  }
 };
 
 // ==============================
 // CHECK AUTH
 // ==============================
 export const isAuthenticated = () => {
-  return !!localStorage.getItem("token");
+  return !!getToken();
 };

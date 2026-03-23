@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import API from "../services/api"; // ✅ USE THIS
+import API from "../services/api";
 import "./AdminDashboard.css";
 
 export default function AdminDashboard() {
@@ -15,24 +15,18 @@ export default function AdminDashboard() {
     image: ""
   });
 
-  // ==============================
-  // FETCH PRODUCTS
-  // ==============================
   const fetchProducts = useCallback(async () => {
     try {
-      const res = await API.get("/products"); // ✅ FIXED
+      const res = await API.get("/products");
       setProducts(res.data || []);
     } catch (err) {
       console.error("Error fetching products", err);
     }
   }, []);
 
-  // ==============================
-  // FETCH ORDERS
-  // ==============================
   const fetchOrders = useCallback(async () => {
     try {
-      const res = await API.get("/orders"); // ✅ FIXED
+      const res = await API.get("/orders");
       setOrders(res.data || []);
     } catch (err) {
       console.error("Error fetching orders", err);
@@ -49,25 +43,23 @@ export default function AdminDashboard() {
     loadData();
   }, [fetchProducts, fetchOrders]);
 
-  // ==============================
-  // HANDLE INPUT
-  // ==============================
   const handleChange = (e) => {
-    setForm((prev) => ({
-      ...prev,
+    setForm({
+      ...form,
       [e.target.name]: e.target.value
-    }));
+    });
   };
 
-  // ==============================
-  // ADD PRODUCT
-  // ==============================
   const addProduct = async (e) => {
     e.preventDefault();
-    try {
-      await API.post("/products", form); // ✅ FIXED
 
-      alert("✅ Product Added");
+    if (!form.name || !form.price_retail || !form.stock) {
+      alert("Please fill all fields");
+      return;
+    }
+
+    try {
+      await API.post("/products", form);
 
       setForm({
         name: "",
@@ -83,26 +75,20 @@ export default function AdminDashboard() {
     }
   };
 
-  // ==============================
-  // DELETE PRODUCT
-  // ==============================
   const deleteProduct = async (id) => {
     if (!window.confirm("Are you sure?")) return;
 
     try {
-      await API.delete(`/products/${id}`); // ✅ FIXED
+      await API.delete(`/products/${id}`);
       fetchProducts();
     } catch (err) {
       console.error("Delete error", err);
     }
   };
 
-  // ==============================
-  // UPDATE ORDER STATUS
-  // ==============================
   const updateStatus = async (id, status) => {
     try {
-      await API.put(`/orders/${id}`, { status }); // ✅ FIXED
+      await API.put(`/orders/${id}`, { status });
       fetchOrders();
     } catch (err) {
       console.error("Update status error", err);
@@ -115,17 +101,16 @@ export default function AdminDashboard() {
 
   return (
     <div className="dashboard">
-      <h1>Admin Dashboard 🧑‍💼</h1>
+      <h1>Admin Dashboard</h1>
 
-      {/* ADD PRODUCT */}
       <div className="card">
         <h2>Add Vegetable</h2>
 
         <form onSubmit={addProduct} className="form-grid">
-          <input name="name" placeholder="Vegetable Name" value={form.name} onChange={handleChange} required />
-          <input type="number" name="price_retail" placeholder="Retail Price" value={form.price_retail} onChange={handleChange} required />
-          <input type="number" name="price_wholesale" placeholder="Wholesale Price" value={form.price_wholesale} onChange={handleChange} required />
-          <input type="number" name="stock" placeholder="Stock" value={form.stock} onChange={handleChange} required />
+          <input name="name" placeholder="Vegetable Name" value={form.name} onChange={handleChange} />
+          <input type="number" name="price_retail" placeholder="Retail Price" value={form.price_retail} onChange={handleChange} />
+          <input type="number" name="price_wholesale" placeholder="Wholesale Price" value={form.price_wholesale} onChange={handleChange} />
+          <input type="number" name="stock" placeholder="Stock" value={form.stock} onChange={handleChange} />
           <input name="image" placeholder="Image URL" value={form.image} onChange={handleChange} />
 
           <button type="submit" className="btn btn-green">
@@ -134,47 +119,65 @@ export default function AdminDashboard() {
         </form>
       </div>
 
-      {/* PRODUCTS */}
       <div className="card">
         <h2>All Vegetables</h2>
 
         <div className="product-grid">
-          {products.map((p) => (
-            <div key={p.id} className="product-card">
-              <img src={p.image || "https://via.placeholder.com/150"} alt={p.name} />
-              <h3>{p.name}</h3>
-              <p>₹{p.price_retail}</p>
+          {products.length === 0 ? (
+            <p>No products</p>
+          ) : (
+            products.map((p) => (
+              <div key={p._id} className="product-card">
+                <img src={p.image || "https://via.placeholder.com/150"} alt={p.name} />
+                <h3>{p.name}</h3>
+                <p>₹{p.price_retail}</p>
 
-              <button onClick={() => deleteProduct(p.id)} className="btn btn-red">
-                Delete
-              </button>
-            </div>
-          ))}
+                <button onClick={() => deleteProduct(p._id)} className="btn btn-red">
+                  Delete
+                </button>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
-      {/* ORDERS */}
       <div className="card">
         <h2>Orders</h2>
 
         <table className="table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>User</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+
           <tbody>
-            {orders.map((o) => (
-              <tr key={o.id}>
-                <td>{o.id}</td>
-                <td>{o.user_id}</td>
-                <td>₹{o.total_amount}</td>
-                <td>{o.status}</td>
-                <td>
-                  <button onClick={() => updateStatus(o.id, "Shipped")} className="btn btn-blue">
-                    Ship
-                  </button>
-                  <button onClick={() => updateStatus(o.id, "Delivered")} className="btn btn-green">
-                    Deliver
-                  </button>
-                </td>
+            {orders.length === 0 ? (
+              <tr>
+                <td colSpan="5">No orders</td>
               </tr>
-            ))}
+            ) : (
+              orders.map((o) => (
+                <tr key={o._id}>
+                  <td>{o._id}</td>
+                  <td>{o.user_id}</td>
+                  <td>₹{o.total_amount}</td>
+                  <td>{o.status}</td>
+                  <td>
+                    <button onClick={() => updateStatus(o._id, "Shipped")} className="btn btn-blue">
+                      Ship
+                    </button>
+                    <button onClick={() => updateStatus(o._id, "Delivered")} className="btn btn-green">
+                      Deliver
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

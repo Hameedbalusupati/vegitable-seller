@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import API from "../services/api";
-import Footer from "../components/Footer"; // ✅ ADDED
+import Footer from "../components/Footer";
 import "./Home.css";
 
 export default function Home() {
@@ -24,33 +25,37 @@ export default function Home() {
   }, []);
 
   const addToCart = (product) => {
-    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+    try {
+      let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-    const existing = cart.find((item) => item._id === product._id); // ✅ FIXED
+      const existing = cart.find((item) => item._id === product._id);
 
-    if (existing) {
-      existing.quantity += 1;
-    } else {
-      cart.push({ ...product, quantity: 1 });
+      if (existing) {
+        existing.quantity += 1;
+      } else {
+        cart.push({ ...product, quantity: 1 });
+      }
+
+      localStorage.setItem("cart", JSON.stringify(cart));
+      alert("Added to cart");
+    } catch (err) {
+      console.error("Cart error:", err);
     }
-
-    localStorage.setItem("cart", JSON.stringify(cart));
-    alert("✅ Added to cart");
   };
 
   const filteredProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(search.toLowerCase())
+    p.name && p.name.toLowerCase().includes(search.toLowerCase())
   );
 
   if (loading) {
-    return <h2 style={{ textAlign: "center" }}>⏳ Loading Products...</h2>;
+    return <h2 style={{ textAlign: "center" }}>Loading Products...</h2>;
   }
 
   return (
     <div className="home">
 
       <div className="navbar">
-        <h2>🥬 VeggieMart</h2>
+        <h2>VeggieMart</h2>
 
         <input
           type="text"
@@ -60,13 +65,13 @@ export default function Home() {
         />
 
         <div className="nav-links">
-          <a href="/cart">Cart 🛒</a>
-          <a href="/login">Login</a>
+          <Link to="/cart">Cart</Link>
+          <Link to="/login">Login</Link>
         </div>
       </div>
 
       <div className="hero">
-        <h1>Fresh Vegetables Delivered to Your Door 🚚</h1>
+        <h1>Fresh Vegetables Delivered to Your Door</h1>
         <p>Farm fresh veggies at best price</p>
       </div>
 
@@ -78,13 +83,13 @@ export default function Home() {
             <p>No products found</p>
           ) : (
             filteredProducts.map((p) => (
-              <div key={p._id} className="product-card"> {/* ✅ FIXED */}
+              <div key={p._id} className="product-card">
                 <img
                   src={p.image || "https://via.placeholder.com/150"}
                   alt={p.name}
                 />
                 <h3>{p.name}</h3>
-                <p>₹{p.price_retail}</p>
+                <p>₹{p.price_retail || p.price}</p>
 
                 <button onClick={() => addToCart(p)}>
                   Add to Cart
@@ -95,7 +100,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ✅ FOOTER ADDED */}
       <Footer />
 
     </div>

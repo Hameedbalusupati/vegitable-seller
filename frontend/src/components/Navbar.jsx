@@ -6,8 +6,13 @@ const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Get user from localStorage
-  const user = JSON.parse(localStorage.getItem("user"));
+  let user = null;
+
+  try {
+    user = JSON.parse(localStorage.getItem("user"));
+  } catch {
+    user = null;
+  }
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -15,50 +20,49 @@ const Navbar = () => {
     navigate("/login");
   };
 
+  const closeMenu = () => setMenuOpen(false);
+
   return (
     <nav className="navbar">
       <div className="navbar-container">
 
-        {/* Logo */}
         <div className="logo" onClick={() => navigate("/")}>
-          🌱 VegMarket
+          VegMarket
         </div>
 
-        {/* Menu Toggle (Mobile) */}
         <div className="menu-icon" onClick={() => setMenuOpen(!menuOpen)}>
           ☰
         </div>
 
-        {/* Links */}
         <ul className={menuOpen ? "nav-links active" : "nav-links"}>
 
-          <li><Link to="/">Home</Link></li>
-          <li><Link to="/products">Products</Link></li>
+          <li><Link to="/" onClick={closeMenu}>Home</Link></li>
+          <li><Link to="/products" onClick={closeMenu}>Products</Link></li>
+          <li><Link to="/cart" onClick={closeMenu}>Cart</Link></li>
 
-          {user && user.role === "customer" && (
+          {user && user.role === "user" && (
             <>
-              <li><Link to="/orders">My Orders</Link></li>
-              <li><Link to="/profile">Profile</Link></li>
+              <li><Link to="/orders" onClick={closeMenu}>My Orders</Link></li>
+              <li><Link to="/profile" onClick={closeMenu}>Profile</Link></li>
             </>
           )}
 
           {user && user.role === "farmer" && (
             <>
-              <li><Link to="/farmer-dashboard">Dashboard</Link></li>
-              <li><Link to="/add-product">Add Product</Link></li>
+              <li><Link to="/farmer-dashboard" onClick={closeMenu}>Dashboard</Link></li>
             </>
           )}
 
           {user && user.role === "admin" && (
             <>
-              <li><Link to="/admin-dashboard">Admin Panel</Link></li>
+              <li><Link to="/admin-dashboard" onClick={closeMenu}>Admin Panel</Link></li>
             </>
           )}
 
           {!user ? (
             <>
-              <li><Link to="/login">Login</Link></li>
-              <li><Link to="/register">Register</Link></li>
+              <li><Link to="/login" onClick={closeMenu}>Login</Link></li>
+              <li><Link to="/register" onClick={closeMenu}>Register</Link></li>
             </>
           ) : (
             <li>

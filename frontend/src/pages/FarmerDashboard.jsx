@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import API from "../services/api"; // ✅ FIXED
+import API from "../services/api";
 import "./FarmerDashboard.css";
 
 export default function FarmerDashboard() {
@@ -14,33 +14,24 @@ export default function FarmerDashboard() {
     image: ""
   });
 
-  // ==============================
-  // FETCH PRODUCTS
-  // ==============================
   const fetchProducts = useCallback(async () => {
     try {
-      const res = await API.get("/farmer/products"); // ✅ FIXED
+      const res = await API.get("/farmer/products");
       setProducts(res.data || []);
     } catch (err) {
       console.error("Error fetching products", err);
     }
   }, []);
 
-  // ==============================
-  // FETCH ORDERS
-  // ==============================
   const fetchOrders = useCallback(async () => {
     try {
-      const res = await API.get("/farmer/orders"); // ✅ FIXED
+      const res = await API.get("/farmer/orders");
       setOrders(res.data || []);
     } catch (err) {
       console.error("Error fetching orders", err);
     }
   }, []);
 
-  // ==============================
-  // LOAD DATA
-  // ==============================
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -51,26 +42,23 @@ export default function FarmerDashboard() {
     loadData();
   }, [fetchProducts, fetchOrders]);
 
-  // ==============================
-  // HANDLE INPUT
-  // ==============================
   const handleChange = (e) => {
-    setForm((prev) => ({
-      ...prev,
+    setForm({
+      ...form,
       [e.target.name]: e.target.value
-    }));
+    });
   };
 
-  // ==============================
-  // ADD PRODUCT
-  // ==============================
   const addProduct = async (e) => {
     e.preventDefault();
 
-    try {
-      await API.post("/farmer/products", form); // ✅ FIXED
+    if (!form.name || !form.price || !form.stock) {
+      alert("Please fill all fields");
+      return;
+    }
 
-      alert("✅ Vegetable Added");
+    try {
+      await API.post("/farmer/products", form);
 
       setForm({
         name: "",
@@ -82,48 +70,37 @@ export default function FarmerDashboard() {
       fetchProducts();
     } catch (err) {
       console.error("Add error:", err);
-      alert("❌ Failed to add product");
     }
   };
 
-  // ==============================
-  // DELETE PRODUCT
-  // ==============================
   const deleteProduct = async (id) => {
     if (!window.confirm("Delete this product?")) return;
 
     try {
-      await API.delete(`/farmer/products/${id}`); // ✅ FIXED
+      await API.delete(`/farmer/products/${id}`);
       fetchProducts();
     } catch (err) {
       console.error("Delete error:", err);
     }
   };
 
-  // ==============================
-  // UPDATE ORDER STATUS
-  // ==============================
   const updateStatus = async (id, status) => {
     try {
-      await API.put(`/farmer/orders/${id}`, { status }); // ✅ FIXED
+      await API.put(`/farmer/orders/${id}`, { status });
       fetchOrders();
     } catch (err) {
       console.error("Update error:", err);
     }
   };
 
-  // ==============================
-  // LOADING UI
-  // ==============================
   if (loading) {
     return <h2 style={{ textAlign: "center" }}>Loading Farmer Data...</h2>;
   }
 
   return (
     <div className="farmer-dashboard">
-      <h1>🌾 Farmer Dashboard</h1>
+      <h1>Farmer Dashboard</h1>
 
-      {/* ADD PRODUCT */}
       <div className="card">
         <h2>Add Your Vegetable</h2>
 
@@ -133,16 +110,14 @@ export default function FarmerDashboard() {
             placeholder="Vegetable Name"
             value={form.name}
             onChange={handleChange}
-            required
           />
 
           <input
             type="number"
             name="price"
-            placeholder="Price (₹)"
+            placeholder="Price"
             value={form.price}
             onChange={handleChange}
-            required
           />
 
           <input
@@ -151,7 +126,6 @@ export default function FarmerDashboard() {
             placeholder="Stock"
             value={form.stock}
             onChange={handleChange}
-            required
           />
 
           <input
@@ -165,7 +139,6 @@ export default function FarmerDashboard() {
         </form>
       </div>
 
-      {/* PRODUCTS */}
       <div className="card">
         <h2>Your Products</h2>
 
@@ -174,7 +147,7 @@ export default function FarmerDashboard() {
             <p>No products added</p>
           ) : (
             products.map((p) => (
-              <div key={p.id} className="product-card">
+              <div key={p._id} className="product-card">
                 <img
                   src={p.image || "https://via.placeholder.com/150"}
                   alt={p.name}
@@ -185,7 +158,7 @@ export default function FarmerDashboard() {
 
                 <button
                   className="btn btn-red"
-                  onClick={() => deleteProduct(p.id)}
+                  onClick={() => deleteProduct(p._id)}
                 >
                   Delete
                 </button>
@@ -195,7 +168,6 @@ export default function FarmerDashboard() {
         </div>
       </div>
 
-      {/* ORDERS */}
       <div className="card">
         <h2>Orders</h2>
 
@@ -217,22 +189,22 @@ export default function FarmerDashboard() {
               </tr>
             ) : (
               orders.map((o) => (
-                <tr key={o.id}>
-                  <td>{o.id}</td>
+                <tr key={o._id}>
+                  <td>{o._id}</td>
                   <td>{o.user_id}</td>
                   <td>₹{o.total_amount}</td>
                   <td>{o.status}</td>
                   <td>
                     <button
                       className="btn btn-blue"
-                      onClick={() => updateStatus(o.id, "Packed")}
+                      onClick={() => updateStatus(o._id, "Packed")}
                     >
                       Pack
                     </button>
 
                     <button
                       className="btn btn-green"
-                      onClick={() => updateStatus(o.id, "Shipped")}
+                      onClick={() => updateStatus(o._id, "Shipped")}
                       style={{ marginLeft: "5px" }}
                     >
                       Ship
