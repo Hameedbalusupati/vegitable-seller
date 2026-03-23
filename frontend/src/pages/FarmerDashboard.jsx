@@ -14,6 +14,8 @@ export default function FarmerDashboard() {
     image: null
   });
 
+  const BASE_URL = import.meta.env.VITE_API_URL.replace("/api", "");
+
   // ==============================
   // FETCH PRODUCTS
   // ==============================
@@ -65,7 +67,7 @@ export default function FarmerDashboard() {
   };
 
   // ==============================
-  // ADD PRODUCT (FILE UPLOAD)
+  // ADD PRODUCT
   // ==============================
   const addProduct = async (e) => {
     e.preventDefault();
@@ -86,11 +88,14 @@ export default function FarmerDashboard() {
       formData.append("farmer_id", user?.id);
       formData.append("image", form.image);
 
-      await API.post("/products/", formData);
+      await API.post("/products/", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data"
+        }
+      });
 
       alert("Product added successfully ✅");
 
-      // Reset form
       setForm({
         name: "",
         price: "",
@@ -98,15 +103,13 @@ export default function FarmerDashboard() {
         image: null
       });
 
-      // Reset file input manually
       document.querySelector('input[name="image"]').value = "";
 
-      // Refresh products
       fetchProducts();
 
     } catch (err) {
-      console.error("Add Product Error:", err);
-      alert("Failed to add product ❌");
+      console.error("FULL ERROR:", err.response?.data || err);
+      alert(err.response?.data?.message || "Failed to add product ❌");
     }
   };
 
@@ -148,9 +151,7 @@ export default function FarmerDashboard() {
     <div className="farmer-dashboard">
       <h1>Farmer Dashboard</h1>
 
-      {/* ============================== */}
       {/* ADD PRODUCT */}
-      {/* ============================== */}
       <div className="card">
         <h2>Add Your Vegetable</h2>
 
@@ -191,9 +192,7 @@ export default function FarmerDashboard() {
         </form>
       </div>
 
-      {/* ============================== */}
       {/* PRODUCTS */}
-      {/* ============================== */}
       <div className="card">
         <h2>Your Products</h2>
 
@@ -206,7 +205,7 @@ export default function FarmerDashboard() {
                 <img
                   src={
                     p.image
-                      ? `https://vegitable-seller.onrender.com/uploads/${p.image}`
+                      ? `${BASE_URL}${p.image}`
                       : "https://via.placeholder.com/150"
                   }
                   alt={p.name}
@@ -228,9 +227,7 @@ export default function FarmerDashboard() {
         </div>
       </div>
 
-      {/* ============================== */}
       {/* ORDERS */}
-      {/* ============================== */}
       <div className="card">
         <h2>Orders</h2>
 

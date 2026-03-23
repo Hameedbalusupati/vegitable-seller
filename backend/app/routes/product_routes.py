@@ -7,12 +7,12 @@ import os
 product_bp = Blueprint("products", __name__)
 
 # ==============================
-# CONFIG
+# CONFIG (🔥 FIX FOR RENDER)
 # ==============================
-UPLOAD_FOLDER = "uploads"
+UPLOAD_FOLDER = "/tmp/uploads"   # ✅ IMPORTANT FIX
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
 
-# Create folder if not exists
+# Create folder
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
@@ -52,6 +52,7 @@ def add_product():
             # Avoid duplicate names
             file_path = os.path.join(UPLOAD_FOLDER, filename)
             counter = 1
+
             while os.path.exists(file_path):
                 name_part, ext = filename.rsplit(".", 1)
                 filename = f"{name_part}_{counter}.{ext}"
@@ -107,7 +108,8 @@ def get_products():
                 "price_per_kg": p.price_per_kg,
                 "bulk_price": p.bulk_price,
                 "stock": p.stock,
-                "image": p.image
+                # ✅ return full image URL
+                "image": f"/api/products/uploads/{p.image}" if p.image else ""
             })
 
         return jsonify(result), 200
@@ -138,7 +140,7 @@ def delete_product(id):
 
 
 # ==============================
-# SERVE IMAGES (🔥 FIXED URL)
+# SERVE IMAGES
 # ==============================
 @product_bp.route("/uploads/<filename>")
 def get_image(filename):

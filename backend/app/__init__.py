@@ -12,7 +12,7 @@ def create_app():
     # ==============================
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "secret-key")
 
-    # 🔥 FIX: Render postgres needs this
+    # 🔥 FIX: PostgreSQL URL for Render
     database_url = os.getenv("DATABASE_URL")
 
     if database_url and database_url.startswith("postgres://"):
@@ -26,12 +26,10 @@ def create_app():
     }
 
     # ==============================
-    # UPLOAD FOLDER (🔥 IMPORTANT)
+    # 🔥 UPLOAD FOLDER (FIX FOR RENDER)
     # ==============================
-    app.config["UPLOAD_FOLDER"] = os.path.join(os.getcwd(), "uploads")
-
-    if not os.path.exists(app.config["UPLOAD_FOLDER"]):
-        os.makedirs(app.config["UPLOAD_FOLDER"])
+    app.config["UPLOAD_FOLDER"] = "/tmp/uploads"
+    os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
     # ==============================
     # INIT EXTENSIONS
@@ -40,9 +38,13 @@ def create_app():
     jwt.init_app(app)
 
     # ==============================
-    # CORS
+    # 🔥 CORS FIX (VERY IMPORTANT)
     # ==============================
-    CORS(app, resources={r"/*": {"origins": "*"}})
+    CORS(
+        app,
+        supports_credentials=True,
+        resources={r"/api/*": {"origins": "*"}}
+    )
 
     # ==============================
     # IMPORT MODELS
@@ -82,9 +84,9 @@ def create_app():
         db.create_all()
 
     # ==============================
-    # SERVE UPLOADED IMAGES
+    # SERVE UPLOADED IMAGES (GLOBAL)
     # ==============================
-    @app.route("/uploads/<filename>")
+    @app.route("/api/uploads/<filename>")
     def uploaded_file(filename):
         return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
