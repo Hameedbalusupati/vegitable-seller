@@ -1,0 +1,101 @@
+/* Background */
+.dashboard {
+  min-height: 100vh;
+  background: #f1f3f6;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+/* Heading */
+.dashboard h1 {
+  font-size: 28px;
+  margin-bottom: 20px;
+}
+
+/* Card */
+.card {
+  background: white;
+  padding: 20px;
+  margin-bottom: 25px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Form */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.form-grid input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+/* Buttons */
+.btn {
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-green {
+  background: #28a745;
+  color: white;
+}
+
+.btn-red {
+  background: #dc3545;
+  color: white;
+}
+
+.btn-blue {
+  background: #007bff;
+  color: white;
+}
+
+.btn:hover {
+  opacity: 0.9;
+}
+
+/* Product Grid */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+}
+
+.product-card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fff;
+  text-align: center;
+}
+
+.product-card img {
+  height: 120px;
+  width: 100%;
+  object-fit: cover;
+  border-radius: 5px;
+}
+
+/* Table */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 10px;
+  border: 1px solid #ddd;
+  text-align: center;
+}
+
+.table th {
+  background: #f5f5f5;
+}

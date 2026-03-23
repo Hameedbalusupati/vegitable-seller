@@ -1,0 +1,76 @@
+/* FULL PAGE BACKGROUND */
+.login-container {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #00c853, #b2ff59); /* 🌿 fresh green theme */
+  font-family: Arial, sans-serif;
+}
+
+/* CARD */
+.login-card {
+  background: #ffffff;
+  padding: 30px;
+  width: 320px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* TITLE */
+.login-card h2 {
+  margin-bottom: 20px;
+  color: #333;
+}
+
+/* INPUTS */
+.login-card input {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  outline: none;
+  transition: 0.3s;
+}
+
+/* INPUT FOCUS */
+.login-card input:focus {
+  border-color: #00c853;
+  box-shadow: 0 0 5px rgba(0, 200, 83, 0.3);
+}
+
+/* BUTTON */
+.login-card button {
+  width: 100%;
+  padding: 10px;
+  background: #00c853;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+  font-size: 16px;
+  transition: 0.3s;
+}
+
+/* BUTTON HOVER */
+.login-card button:hover {
+  background: #009624;
+}
+
+/* TEXT */
+.login-card p {
+  margin-top: 12px;
+  font-size: 14px;
+}
+
+/* LINK */
+.login-card a {
+  color: #2874f0;
+  text-decoration: none;
+}
+
+.login-card a:hover {
+  text-decoration: underline;
+}

@@ -1,0 +1,93 @@
+/* Container */
+.cart-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f1f8f4;
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* Image */
+.cart-item-img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+/* Details */
+.cart-item-details {
+  flex: 2;
+  margin-left: 15px;
+}
+
+.cart-item-details h3 {
+  margin: 0;
+}
+
+.cart-item-details p {
+  margin: 3px 0;
+  font-size: 14px;
+}
+
+/* Quantity */
+.cart-item-qty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cart-item-qty button {
+  padding: 5px 10px;
+  border: none;
+  background-color: #2e7d32;
+  color: white;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.cart-item-qty button:hover {
+  background-color: #1b5e20;
+}
+
+/* Total */
+.cart-item-total {
+  font-weight: bold;
+  width: 80px;
+  text-align: center;
+}
+
+/* Remove Button */
+.remove-btn {
+  background-color: #ff5252;
+  border: none;
+  padding: 6px 10px;
+  color: white;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.remove-btn:hover {
+  background-color: #ff1744;
+}
+
+/* ============================= */
+/* Responsive */
+/* ============================= */
+@media (max-width: 768px) {
+  .cart-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cart-item-qty {
+    margin: 10px 0;
+  }
+
+  .cart-item-total {
+    margin-bottom: 10px;
+  }
+}
