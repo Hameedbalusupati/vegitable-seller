@@ -10,26 +10,29 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await API.get("/products");
-        setProducts(res.data || []);
-        setError("");
-      } catch (err) {
-        console.error("Error fetching products:", err);
+  const fetchProducts = async (retry = 0) => {
+    try {
+      const res = await API.get("/products");
+      setProducts(res.data || []);
+      setError("");
+    } catch (err) {
+      console.log("Fetch error:", err);
 
-        if (!err.response) {
-          setError("Server is starting... please wait and refresh");
-        } else {
-          setError("Failed to load products");
-        }
-      } finally {
-        setLoading(false);
+      // 🔥 Retry logic (IMPORTANT)
+      if (retry < 3) {
+        setTimeout(() => {
+          fetchProducts(retry + 1);
+        }, 5000); // retry after 5 sec
+      } else {
+        setError("Server is waking up... please click retry");
       }
-    };
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchData();
+  useEffect(() => {
+    fetchProducts();
   }, []);
 
   const addToCart = (product) => {
@@ -55,15 +58,37 @@ export default function Home() {
     p.name && p.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  // ==============================
+  // LOADING UI
+  // ==============================
   if (loading) {
-    return <h2 style={{ textAlign: "center" }}>Loading Products...</h2>;
+    return (
+      <h2 style={{ textAlign: "center", marginTop: "50px" }}>
+        Loading Products...
+      </h2>
+    );
   }
 
+  // ==============================
+  // ERROR UI
+  // ==============================
   if (error) {
     return (
       <div style={{ textAlign: "center", marginTop: "50px" }}>
         <h2>{error}</h2>
-        <button onClick={() => window.location.reload()}>
+
+        <button
+          onClick={() => {
+            setLoading(true);
+            setError("");
+            fetchProducts();
+          }}
+          style={{
+            padding: "10px 20px",
+            marginTop: "10px",
+            cursor: "pointer"
+          }}
+        >
           Retry
         </button>
       </div>
@@ -120,7 +145,6 @@ export default function Home() {
       </div>
 
       <Footer />
-
     </div>
   );
 }

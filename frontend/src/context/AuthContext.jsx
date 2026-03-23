@@ -1,30 +1,38 @@
 import { createContext, useContext, useState, useEffect } from "react";
 
-// Create Context
+// ==============================
+// CREATE CONTEXT
+// ==============================
 const AuthContext = createContext();
 
-// Custom Hook
+// ==============================
+// CUSTOM HOOK
+// ==============================
 export const useAuth = () => {
   return useContext(AuthContext);
 };
 
-// Provider Component
-export const AuthProvider = ({ children }) => {
+// ==============================
+// PROVIDER
+// ==============================
+const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // ==============================
-  // LOAD USER FROM LOCAL STORAGE
+  // LOAD USER
   // ==============================
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem("user");
 
       if (storedUser) {
-        setUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
       }
     } catch (err) {
-      console.error("Error loading user", err);
+      console.error("Error loading user:", err);
+      localStorage.removeItem("user"); // ✅ prevent crash
     } finally {
       setLoading(false);
     }
@@ -34,6 +42,8 @@ export const AuthProvider = ({ children }) => {
   // LOGIN
   // ==============================
   const login = (data) => {
+    if (!data?.token || !data?.user) return;
+
     localStorage.setItem("token", data.token);
     localStorage.setItem("user", JSON.stringify(data.user));
     setUser(data.user);
@@ -49,11 +59,18 @@ export const AuthProvider = ({ children }) => {
   };
 
   // ==============================
-  // CHECK ROLE
+  // ROLE CHECKS
   // ==============================
   const isAdmin = user?.role === "admin";
   const isFarmer = user?.role === "farmer";
   const isUser = user?.role === "user";
+
+  // ==============================
+  // LOADING UI
+  // ==============================
+  if (loading) {
+    return <div style={{ textAlign: "center" }}>Loading...</div>;
+  }
 
   return (
     <AuthContext.Provider
@@ -63,11 +80,12 @@ export const AuthProvider = ({ children }) => {
         logout,
         isAdmin,
         isFarmer,
-        isUser,
-        loading
+        isUser
       }}
     >
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
+
+export default AuthProvider;

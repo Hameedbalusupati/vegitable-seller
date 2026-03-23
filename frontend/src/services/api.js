@@ -1,30 +1,20 @@
 import axios from "axios";
 
-// ==============================
-// BASE URL
-// ==============================
 const BASE_URL = import.meta.env.VITE_API_URL;
 
 if (!BASE_URL) {
-  console.error("VITE_API_URL is not defined in .env");
+  console.error("VITE_API_URL is not defined");
 }
 
-console.log("API URL:", BASE_URL);
-
-// ==============================
-// AXIOS INSTANCE
-// ==============================
 const API = axios.create({
   baseURL: BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 30000, // ⏱ 30 sec (important for Render wake-up)
+  timeout: 30000,
 });
 
-// ==============================
-// REQUEST INTERCEPTOR (TOKEN)
-// ==============================
+// REQUEST INTERCEPTOR
 API.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
@@ -38,69 +28,33 @@ API.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// ==============================
 // RESPONSE INTERCEPTOR
-// ==============================
 API.interceptors.response.use(
   (response) => response,
   async (error) => {
-    // ==============================
-    // NETWORK ERROR (RETRY LOGIC)
-    // ==============================
-    if (!error.response) {
-      console.warn("Backend waking up... Retrying request");
+    const originalRequest = error.config;
 
-      const originalRequest = error.config;
-
-      // Retry only once
-      if (!originalRequest._retry) {
-        originalRequest._retry = true;
-
-        await new Promise((resolve) => setTimeout(resolve, 5000)); // wait 5 sec
-
-        return API(originalRequest); // retry request
+    if (!error.response && originalRequest) {
+      if (!originalRequest._retryCount) {
+        originalRequest._retryCount = 0;
       }
 
-      // After retry fails
-      alert("Server is starting... please refresh in a few seconds.");
-      return Promise.reject(error);
+      if (originalRequest._retryCount < 3) {
+        originalRequest._retryCount += 1;
+
+        await new Promise((res) => setTimeout(res, 4000));
+        return API(originalRequest);
+      }
+
+      return Promise.reject(new Error("Server not responding"));
     }
 
-    const { status, data } = error.response;
+    const status = error.response?.status;
 
-    // ==============================
-    // UNAUTHORIZED (401)
-    // ==============================
     if (status === 401) {
-      console.warn("Session expired");
-
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
-      }
-    }
-
-    // ==============================
-    // FORBIDDEN (403)
-    // ==============================
-    if (status === 403) {
-      alert("You are not allowed to perform this action");
-    }
-
-    // ==============================
-    // SERVER ERROR (500+)
-    // ==============================
-    if (status >= 500) {
-      alert("Server error. Try again later.");
-    }
-
-    // ==============================
-    // BACKEND MESSAGE
-    // ==============================
-    if (data?.message) {
-      alert(data.message);
+      window.location.href = "/login";
     }
 
     return Promise.reject(error);
