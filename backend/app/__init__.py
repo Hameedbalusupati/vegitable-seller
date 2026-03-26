@@ -12,7 +12,7 @@ def create_app():
     # ==============================
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "secret-key")
 
-    # 🔥 FIX: PostgreSQL URL for Render
+    # 🔥 DATABASE FIX (Render PostgreSQL)
     database_url = os.getenv("DATABASE_URL")
 
     if database_url and database_url.startswith("postgres://"):
@@ -21,15 +21,21 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+    # SSL for Render PostgreSQL
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
         "connect_args": {"sslmode": "require"}
     }
 
     # ==============================
-    # 🔥 UPLOAD FOLDER (FIX FOR RENDER)
+    # 🔥 UPLOAD FOLDER (FIXED FOR WINDOWS + RENDER)
     # ==============================
-    app.config["UPLOAD_FOLDER"] = "/tmp/uploads"
-    os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+    if os.name == "nt":  # Windows (local)
+        upload_folder = os.path.join(os.getcwd(), "uploads")
+    else:  # Linux (Render)
+        upload_folder = "/tmp/uploads"
+
+    app.config["UPLOAD_FOLDER"] = upload_folder
+    os.makedirs(upload_folder, exist_ok=True)
 
     # ==============================
     # INIT EXTENSIONS
@@ -38,7 +44,7 @@ def create_app():
     jwt.init_app(app)
 
     # ==============================
-    # 🔥 CORS FIX (VERY IMPORTANT)
+    # 🔥 CORS FIX (ALLOW FRONTEND)
     # ==============================
     CORS(
         app,
@@ -84,7 +90,7 @@ def create_app():
         db.create_all()
 
     # ==============================
-    # SERVE UPLOADED IMAGES (GLOBAL)
+    # SERVE UPLOADED IMAGES
     # ==============================
     @app.route("/api/uploads/<filename>")
     def uploaded_file(filename):
