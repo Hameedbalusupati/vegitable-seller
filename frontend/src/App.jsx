@@ -1,10 +1,10 @@
 import { BrowserRouter } from "react-router-dom";
 import AppRoutes from "./routes/AppRoutes";
 
-import { AuthProvider } from "./context/AuthProvider";
+import { AuthProvider } from "./context/AuthContext"; // ✅ FIXED
 import { CartProvider } from "./context/CartContext";
 
-// Optional global components
+// Components
 import Navbar from "./components/Navbar";
 
 function App() {
@@ -13,7 +13,7 @@ function App() {
       <AuthProvider>
         <CartProvider>
 
-          {/* 🔥 GLOBAL NAVBAR */}
+          {/* GLOBAL NAVBAR */}
           <Navbar />
 
           {/* ROUTES */}
