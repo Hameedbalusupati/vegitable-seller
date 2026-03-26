@@ -1,29 +1,39 @@
 import { useEffect, useState } from "react";
-import { getProducts } from "../services/productService"; // ✅ use service
+import { getProducts } from "../services/productService";
+import { useCart } from "../hooks/useCart";
 import "./Products.css";
 
 export default function Products() {
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const { addToCart } = useCart(); // 🔥 use context
 
   // ==============================
-  // FETCH PRODUCTS (SAFE)
+  // FETCH PRODUCTS WITH RETRY
   // ==============================
-  const fetchProducts = async () => {
+  const fetchProducts = async (retry = 0) => {
     try {
       const data = await getProducts();
 
       if (Array.isArray(data)) {
         setProducts(data);
+        setError("");
       } else {
         setProducts([]);
       }
     } catch (err) {
       console.error("Error fetching products:", err);
-      setProducts([]);
+
+      if (retry < 3) {
+        setTimeout(() => fetchProducts(retry + 1), 4000);
+      } else {
+        setError("Server is waking up... please retry");
+      }
     } finally {
-      setLoading(false); // 🔥 ALWAYS STOP LOADING
+      setLoading(false);
     }
   };
 
@@ -32,36 +42,7 @@ export default function Products() {
   // ==============================
   useEffect(() => {
     fetchProducts();
-
-    // 🔥 Optional retry if backend sleeping
-    const retry = setTimeout(() => {
-      fetchProducts();
-    }, 5000);
-
-    return () => clearTimeout(retry);
   }, []);
-
-  // ==============================
-  // ADD TO CART
-  // ==============================
-  const addToCart = (product) => {
-    try {
-      let cart = JSON.parse(localStorage.getItem("cart")) || [];
-
-      const existing = cart.find((item) => item._id === product._id);
-
-      if (existing) {
-        existing.quantity += 1;
-      } else {
-        cart.push({ ...product, quantity: 1 });
-      }
-
-      localStorage.setItem("cart", JSON.stringify(cart));
-      alert("Added to cart");
-    } catch (err) {
-      console.error("Cart error:", err);
-    }
-  };
 
   // ==============================
   // SEARCH FILTER
@@ -71,10 +52,30 @@ export default function Products() {
   );
 
   // ==============================
-  // LOADING UI
+  // LOADING
   // ==============================
   if (loading) {
     return <h2 className="loading">Loading Products...</h2>;
+  }
+
+  // ==============================
+  // ERROR UI
+  // ==============================
+  if (error) {
+    return (
+      <div className="products-container">
+        <h2>{error}</h2>
+        <button
+          onClick={() => {
+            setLoading(true);
+            setError("");
+            fetchProducts();
+          }}
+        >
+          Retry
+        </button>
+      </div>
+    );
   }
 
   // ==============================
@@ -99,14 +100,22 @@ export default function Products() {
           <p>No vegetables found</p>
         ) : (
           filteredProducts.map((p) => (
-            <div key={p._id} className="product-card">
+            <div key={p._id || p.id} className="product-card">
               <img
                 src={p.image || "https://via.placeholder.com/150"}
                 alt={p.name}
               />
 
               <h3>{p.name}</h3>
-              <p className="price">₹{p.price_retail || p.price}</p>
+
+              <p className="price">
+                ₹{(
+                  p.price_retail ||
+                  p.price_per_kg ||
+                  p.price ||
+                  0
+                ).toFixed(2)}
+              </p>
 
               <button onClick={() => addToCart(p)}>
                 Add to Cart

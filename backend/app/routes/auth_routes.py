@@ -1,49 +1,64 @@
 from flask import Blueprint, request, jsonify
 from app.extensions import db
-from app.models.user_model import User
+from app.models import User
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token
 
 auth_bp = Blueprint("auth", __name__)
+
 
 # ==============================
 # REGISTER
 # ==============================
 @auth_bp.route("/register", methods=["POST"])
 def register():
-    data = request.get_json()
+    try:
+        data = request.get_json()
 
-    if not data:
-        return jsonify({"message": "No input data provided"}), 400
+        if not data:
+            return jsonify({"message": "No input data provided"}), 400
 
-    name = data.get("name")
-    email = data.get("email")
-    password = data.get("password")
-    role = data.get("role", "user")
+        name = data.get("name")
+        email = data.get("email")
+        password = data.get("password")
+        role = data.get("role", "customer")
 
-    if not name or not email or not password:
-        return jsonify({"message": "All fields required"}), 400
+        # Validation
+        if not name or not email or not password:
+            return jsonify({"message": "Name, email, and password are required"}), 400
 
-    existing_user = User.query.filter_by(email=email).first()
-    if existing_user:
-        return jsonify({"message": "Email already exists"}), 400
+        # Check existing user
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            return jsonify({"message": "Email already exists"}), 400
 
-    hashed_password = generate_password_hash(password)
+        # Hash password
+        hashed_password = generate_password_hash(password)
 
-    user = User(
-        name=name,
-        email=email,
-        password=hashed_password,
-        role=role
-    )
+        # Create user
+        user = User(
+            name=name,
+            email=email,
+            password=hashed_password,
+            role=role
+        )
 
-    db.session.add(user)
-    db.session.commit()
+        db.session.add(user)
+        db.session.commit()
 
-    return jsonify({
-        "message": "User registered successfully",
-        "user_id": user.id
-    }), 201
+        return jsonify({
+            "message": "User registered successfully",
+            "user": {
+                "id": user.id,
+                "name": user.name,
+                "email": user.email,
+                "role": user.role
+            }
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"message": str(e)}), 500
 
 
 # ==============================
@@ -51,34 +66,49 @@ def register():
 # ==============================
 @auth_bp.route("/login", methods=["POST"])
 def login():
-    data = request.get_json()
+    try:
+        data = request.get_json()
 
-    if not data:
-        return jsonify({"message": "No input data"}), 400
+        if not data:
+            return jsonify({"message": "No input data"}), 400
 
-    email = data.get("email")
-    password = data.get("password")
+        email = data.get("email")
+        password = data.get("password")
 
-    if not email or not password:
-        return jsonify({"message": "Email and password required"}), 400
+        if not email or not password:
+            return jsonify({"message": "Email and password required"}), 400
 
-    user = User.query.filter_by(email=email).first()
+        # Find user
+        user = User.query.filter_by(email=email).first()
 
-    if not user:
-        return jsonify({"message": "User not found"}), 404
+        if not user:
+            return jsonify({"message": "User not found"}), 404
 
-    if not check_password_hash(user.password, password):
-        return jsonify({"message": "Invalid password"}), 401
+        # Check password
+        if not check_password_hash(user.password, password):
+            return jsonify({"message": "Invalid password"}), 401
 
-    token = create_access_token(identity=user.id)
+        # Generate token
+        token = create_access_token(identity=user.id)
 
-    return jsonify({
-        "message": "Login successful",
-        "token": token,
-        "user": {
-            "id": user.id,
-            "name": user.name,
-            "email": user.email,
-            "role": user.role
-        }
-    }), 200
+        return jsonify({
+            "message": "Login successful",
+            "token": token,
+            "user": {
+                "id": user.id,
+                "name": user.name,
+                "email": user.email,
+                "role": user.role
+            }
+        }), 200
+
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
+
+# ==============================
+# VERIFY TOKEN (OPTIONAL)
+# ==============================
+@auth_bp.route("/verify", methods=["GET"])
+def verify():
+    return jsonify({"message": "Auth routes working"}), 200

@@ -1,29 +1,60 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import API from "../services/api";
 import "./Cart.css";
 
 export default function Cart() {
-  const [cart, setCart] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("cart")) || [];
-    } catch {
-      return [];
-    }
-  });
-
+  const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // ==============================
+  // LOAD CART
+  // ==============================
+  useEffect(() => {
+    loadCart();
+
+    // 🔥 Sync with other components
+    window.addEventListener("storage", loadCart);
+
+    return () => {
+      window.removeEventListener("storage", loadCart);
+    };
+  }, []);
+
+  const loadCart = () => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("cart")) || [];
+      setCart(stored);
+    } catch {
+      setCart([]);
+    }
+  };
 
   const updateCart = (newCart) => {
     setCart(newCart);
     localStorage.setItem("cart", JSON.stringify(newCart));
+
+    // 🔥 Important for Navbar update
+    window.dispatchEvent(new Event("storage"));
   };
 
+  // ==============================
+  // QUANTITY HANDLING
+  // ==============================
   const increaseQty = (id) => {
-    const updated = cart.map((item) =>
-      item._id === id
-        ? { ...item, quantity: item.quantity + 1 }
-        : item
-    );
+    const updated = cart.map((item) => {
+      if (item._id === id) {
+        const newQty = item.quantity + 1;
+
+        return {
+          ...item,
+          quantity: item.stock
+            ? Math.min(newQty, item.stock)
+            : newQty
+        };
+      }
+      return item;
+    });
+
     updateCart(updated);
   };
 
@@ -44,9 +75,17 @@ export default function Cart() {
     updateCart(updated);
   };
 
+  // ==============================
+  // TOTAL CALCULATION
+  // ==============================
   const total = cart.reduce(
     (sum, item) =>
-      sum + (item.price_retail || item.price || 0) * item.quantity,
+      sum +
+      (item.selectedPrice ||
+        item.price_retail ||
+        item.price ||
+        0) *
+        item.quantity,
     0
   );
 
@@ -55,6 +94,9 @@ export default function Cart() {
     0
   );
 
+  // ==============================
+  // CHECKOUT
+  // ==============================
   const handleCheckout = async () => {
     if (cart.length === 0) {
       alert("Cart is empty");
@@ -71,7 +113,7 @@ export default function Cart() {
 
       await API.post("/orders", orderData);
 
-      alert("Order placed successfully");
+      alert("Order placed successfully ✅");
 
       updateCart([]);
     } catch (err) {
@@ -80,7 +122,7 @@ export default function Cart() {
       if (!err.response) {
         alert("Server is starting, try again in a few seconds");
       } else {
-        alert("Failed to place order");
+        alert("Failed to place order ❌");
       }
     } finally {
       setLoading(false);
@@ -96,6 +138,7 @@ export default function Cart() {
       ) : (
         <div className="cart-wrapper">
 
+          {/* ================= ITEMS ================= */}
           <div className="cart-items">
             {cart.map((item) => (
               <div key={item._id} className="cart-card">
@@ -106,12 +149,31 @@ export default function Cart() {
 
                 <div className="details">
                   <h3>{item.name}</h3>
-                  <p>₹{item.price_retail || item.price}</p>
+                  <p>
+                    ₹{(
+                      item.selectedPrice ||
+                      item.price_retail ||
+                      item.price ||
+                      0
+                    ).toFixed(2)}
+                  </p>
 
                   <div className="qty">
-                    <button onClick={() => decreaseQty(item._id)}>-</button>
+                    <button
+                      onClick={() => decreaseQty(item._id)}
+                      disabled={item.quantity <= 1}
+                    >
+                      -
+                    </button>
+
                     <span>{item.quantity}</span>
-                    <button onClick={() => increaseQty(item._id)}>+</button>
+
+                    <button
+                      onClick={() => increaseQty(item._id)}
+                      disabled={item.stock && item.quantity >= item.stock}
+                    >
+                      +
+                    </button>
                   </div>
 
                   <button
@@ -125,6 +187,7 @@ export default function Cart() {
             ))}
           </div>
 
+          {/* ================= SUMMARY ================= */}
           <div className="cart-summary">
             <h2>Price Details</h2>
 
@@ -135,7 +198,7 @@ export default function Cart() {
 
             <div className="summary-row">
               <span>Total Price</span>
-              <span>₹{total}</span>
+              <span>₹{total.toFixed(2)}</span>
             </div>
 
             <button

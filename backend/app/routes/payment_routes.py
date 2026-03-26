@@ -1,13 +1,10 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-
-# Try importing PaymentService safely
-try:
-    from app.services.payment_service import PaymentService
-except ImportError:
-    PaymentService = None
+from app.extensions import db
+from app.models import Payment
 
 payment_bp = Blueprint("payment", __name__)
+
 
 # ==============================
 # CREATE PAYMENT
@@ -22,33 +19,72 @@ def create_payment():
         if not data:
             return jsonify({"message": "No input data"}), 400
 
-        if PaymentService is None:
-            return jsonify({"message": "Payment service not available"}), 500
+        order_id = data.get("order_id")
+        amount = data.get("amount")
+        payment_method = data.get("payment_method", "cod")
 
-        response, status = PaymentService.create_payment(user_id, data)
-        return jsonify(response), status
+        if not order_id or not amount:
+            return jsonify({"message": "order_id and amount required"}), 400
+
+        try:
+            amount = float(amount)
+        except ValueError:
+            return jsonify({"message": "Invalid amount"}), 400
+
+        payment = Payment(
+            order_id=order_id,
+            user_id=user_id,
+            amount=amount,
+            payment_method=payment_method,
+            status="success" if payment_method == "cod" else "pending",
+            transaction_id=None
+        )
+
+        db.session.add(payment)
+        db.session.commit()
+
+        return jsonify({
+            "message": "Payment created successfully",
+            "payment": {
+                "id": payment.id,
+                "order_id": payment.order_id,
+                "amount": payment.amount,
+                "status": payment.status,
+                "method": payment.payment_method
+            }
+        }), 201
 
     except Exception as e:
+        db.session.rollback()
         return jsonify({"message": str(e)}), 500
 
 
 # ==============================
-# VERIFY PAYMENT
+# VERIFY PAYMENT (SIMULATION)
 # ==============================
 @payment_bp.route("/verify/<int:payment_id>", methods=["POST"])
 @jwt_required()
 def verify_payment(payment_id):
     try:
-        if not payment_id:
-            return jsonify({"message": "Payment ID required"}), 400
+        payment = db.session.get(Payment, payment_id)
 
-        if PaymentService is None:
-            return jsonify({"message": "Payment service not available"}), 500
+        if not payment:
+            return jsonify({"message": "Payment not found"}), 404
 
-        response, status = PaymentService.verify_payment(payment_id)
-        return jsonify(response), status
+        # Simulate success
+        payment.status = "success"
+        payment.transaction_id = f"TXN{payment.id}"
+
+        db.session.commit()
+
+        return jsonify({
+            "message": "Payment verified successfully",
+            "payment_id": payment.id,
+            "status": payment.status
+        }), 200
 
     except Exception as e:
+        db.session.rollback()
         return jsonify({"message": str(e)}), 500
 
 
@@ -61,18 +97,28 @@ def get_payments():
     try:
         user_id = get_jwt_identity()
 
-        if PaymentService is None:
-            return jsonify({"message": "Payment service not available"}), 500
+        payments = Payment.query.filter_by(user_id=user_id).all()
 
-        response, status = PaymentService.get_user_payments(user_id)
-        return jsonify(response), status
+        result = []
+        for p in payments:
+            result.append({
+                "id": p.id,
+                "order_id": p.order_id,
+                "amount": p.amount,
+                "method": p.payment_method,
+                "status": p.status,
+                "transaction_id": p.transaction_id,
+                "created_at": p.created_at
+            })
+
+        return jsonify(result), 200
 
     except Exception as e:
         return jsonify({"message": str(e)}), 500
 
 
 # ==============================
-# TEST ROUTE (NO AUTH)
+# TEST ROUTE
 # ==============================
 @payment_bp.route("/test", methods=["GET"])
 def test_payment():

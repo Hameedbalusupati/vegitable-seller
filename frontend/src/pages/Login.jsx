@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import API from "../services/api";
+import { useAuth } from "../hooks/useAuth";
 import "./Login.css";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth(); // 🔥 use context
 
   const [form, setForm] = useState({
     email: "",
@@ -29,7 +31,10 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    if (!form.email || !form.password) {
+    const email = form.email.trim();
+    const password = form.password.trim();
+
+    if (!email || !password) {
       alert("Please fill all fields");
       return;
     }
@@ -37,9 +42,10 @@ export default function Login() {
     try {
       setLoading(true);
 
-      // 🔥 TRY CORRECT ENDPOINT
-      const res = await API.post("/auth/login", form); 
-      // 👉 if this fails, change to "/login"
+      const res = await API.post("/auth/login", {
+        email,
+        password
+      });
 
       const { token, user } = res.data;
 
@@ -48,13 +54,10 @@ export default function Login() {
         return;
       }
 
-      // ==============================
-      // SAVE DATA
-      // ==============================
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(user));
+      // 🔥 USE CONTEXT (IMPORTANT)
+      login({ token, user });
 
-      alert("Login Successful");
+      alert("Login Successful ✅");
 
       // ==============================
       // ROLE BASED REDIRECT
@@ -70,7 +73,6 @@ export default function Login() {
     } catch (err) {
       console.error("Login error:", err);
 
-      // 🔥 Handle Render sleep
       if (!err.response) {
         alert("Server is starting... try again in a few seconds.");
         return;
@@ -79,7 +81,7 @@ export default function Login() {
       if (err.response?.data?.message) {
         alert(err.response.data.message);
       } else {
-        alert("Invalid email or password");
+        alert("Invalid email or password ❌");
       }
 
     } finally {

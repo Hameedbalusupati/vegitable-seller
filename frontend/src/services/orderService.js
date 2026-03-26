@@ -1,10 +1,29 @@
 import API from "./api";
 
 // ==============================
+// HELPER: HANDLE ERROR
+// ==============================
+const handleError = (error, defaultMsg) => {
+  console.error(defaultMsg, error);
+
+  if (!error.response) {
+    throw new Error("Server is starting, please try again ⏳");
+  }
+
+  throw new Error(
+    error.response?.data?.message || defaultMsg || "Something went wrong ❌"
+  );
+};
+
+// ==============================
 // CREATE ORDER (CHECKOUT)
 // ==============================
 export const createOrder = async (orderData) => {
   try {
+    if (!orderData || !orderData.items?.length) {
+      throw new Error("Invalid order data");
+    }
+
     const res = await API.post("/orders", orderData);
 
     if (!res.data) {
@@ -13,13 +32,7 @@ export const createOrder = async (orderData) => {
 
     return res.data;
   } catch (error) {
-    console.error("Create order error:", error);
-
-    if (!error.response) {
-      throw new Error("Server is starting, please try again");
-    }
-
-    throw error;
+    handleError(error, "Create order failed");
   }
 };
 
@@ -30,15 +43,9 @@ export const getMyOrders = async () => {
   try {
     const res = await API.get("/orders/my");
 
-    return res.data || [];
+    return Array.isArray(res.data) ? res.data : [];
   } catch (error) {
-    console.error("Get my orders error:", error);
-
-    if (!error.response) {
-      throw new Error("Server is starting, please wait");
-    }
-
-    throw error;
+    handleError(error, "Fetch orders failed");
   }
 };
 
@@ -49,15 +56,9 @@ export const getAllOrders = async () => {
   try {
     const res = await API.get("/orders");
 
-    return res.data || [];
+    return Array.isArray(res.data) ? res.data : [];
   } catch (error) {
-    console.error("Get all orders error:", error);
-
-    if (!error.response) {
-      throw new Error("Server is starting, please wait");
-    }
-
-    throw error;
+    handleError(error, "Fetch all orders failed");
   }
 };
 
@@ -74,13 +75,7 @@ export const updateOrderStatus = async (id, status) => {
 
     return res.data;
   } catch (error) {
-    console.error("Update order error:", error);
-
-    if (!error.response) {
-      throw new Error("Server is starting, try again");
-    }
-
-    throw error;
+    handleError(error, "Update order failed");
   }
 };
 
@@ -97,12 +92,6 @@ export const deleteOrder = async (id) => {
 
     return res.data;
   } catch (error) {
-    console.error("Delete order error:", error);
-
-    if (!error.response) {
-      throw new Error("Server is starting, try again");
-    }
-
-    throw error;
+    handleError(error, "Delete order failed");
   }
 };

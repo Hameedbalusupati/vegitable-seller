@@ -2,7 +2,7 @@
 // FORMAT PRICE (₹)
 // ==============================
 export const formatPrice = (price) => {
-  if (!price) return "₹0";
+  if (price === null || price === undefined) return "₹0";
   return "₹" + Number(price).toLocaleString("en-IN");
 };
 
@@ -11,11 +11,15 @@ export const formatPrice = (price) => {
 // ==============================
 export const formatDate = (date) => {
   if (!date) return "";
-  return new Date(date).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric"
-  });
+  try {
+    return new Date(date).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
+    });
+  } catch {
+    return "";
+  }
 };
 
 // ==============================
@@ -23,34 +27,45 @@ export const formatDate = (date) => {
 // ==============================
 export const capitalize = (text) => {
   if (!text) return "";
-  return text.charAt(0).toUpperCase() + text.slice(1);
+  return text
+    .toString()
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 };
 
 // ==============================
-// GENERATE RANDOM ORDER ID
+// GENERATE UNIQUE ORDER ID
 // ==============================
 export const generateOrderId = () => {
-  return "ORD-" + Math.floor(Math.random() * 1000000);
+  return (
+    "ORD-" +
+    Date.now().toString().slice(-6) +
+    "-" +
+    Math.floor(Math.random() * 1000)
+  );
 };
 
 // ==============================
-// DEBOUNCE FUNCTION (SEARCH)
+// DEBOUNCE FUNCTION (SAFE)
 // ==============================
 export const debounce = (func, delay = 500) => {
   let timer;
   return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => {
-      func(...args);
-    }, delay);
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => func(...args), delay);
   };
 };
 
 // ==============================
-// SAVE TO LOCAL STORAGE
+// SAVE TO LOCAL STORAGE (SAFE)
 // ==============================
 export const saveToStorage = (key, value) => {
-  localStorage.setItem(key, JSON.stringify(value));
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (err) {
+    console.error("Storage save error:", err);
+  }
 };
 
 // ==============================
@@ -58,8 +73,10 @@ export const saveToStorage = (key, value) => {
 // ==============================
 export const getFromStorage = (key) => {
   try {
-    return JSON.parse(localStorage.getItem(key));
-  } catch {
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : null;
+  } catch (err) {
+    console.error("Storage read error:", err);
     return null;
   }
 };
@@ -68,7 +85,11 @@ export const getFromStorage = (key) => {
 // REMOVE FROM LOCAL STORAGE
 // ==============================
 export const removeFromStorage = (key) => {
-  localStorage.removeItem(key);
+  try {
+    localStorage.removeItem(key);
+  } catch (err) {
+    console.error("Storage remove error:", err);
+  }
 };
 
 // ==============================
@@ -78,6 +99,8 @@ export const getStatusColor = (status) => {
   switch (status) {
     case "Pending":
       return "orange";
+    case "Packed":
+      return "purple";
     case "Shipped":
       return "blue";
     case "Delivered":

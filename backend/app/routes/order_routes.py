@@ -1,11 +1,10 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.extensions import db
-from app.models.order_model import Order
-from app.models.order_item_model import OrderItem
-from app.models.product_model import Product
+from app.models import Order, OrderItem, Product
 
 order_bp = Blueprint("orders", __name__)
+
 
 # ==============================
 # CREATE ORDER
@@ -25,25 +24,27 @@ def create_order():
         if len(items) == 0:
             return jsonify({"message": "Cart is empty"}), 400
 
-        order = Order(user_id=user_id, total_price=0, status="Pending")
+        # Create order
+        order = Order(user_id=user_id, total_price=0, status="pending")
         db.session.add(order)
         db.session.flush()
 
         total_price = 0
 
         for item in items:
-            product = db.session.get(Product, item.get("_id"))
-
-            if not product:
-                return jsonify({"message": "Product not found"}), 400
-
+            product_id = item.get("id")  # ✅ FIXED (was _id)
             quantity = item.get("quantity", 1)
             order_type = item.get("type", "kg")
+
+            product = db.session.get(Product, product_id)
+
+            if not product:
+                return jsonify({"message": f"Product {product_id} not found"}), 400
 
             if quantity <= 0:
                 return jsonify({"message": "Invalid quantity"}), 400
 
-            # Price
+            # Price calculation
             if order_type == "kg":
                 price = product.price_per_kg * quantity
             else:
@@ -53,9 +54,11 @@ def create_order():
             if product.stock < quantity:
                 return jsonify({"message": f"{product.name} out of stock"}), 400
 
+            # Reduce stock
             product.stock -= quantity
             total_price += price
 
+            # Add order item
             order_item = OrderItem(
                 order_id=order.id,
                 product_id=product.id,
@@ -96,7 +99,7 @@ def get_orders():
 
             result.append({
                 "id": order.id,
-                "total_amount": order.total_price,
+                "total_price": order.total_price,
                 "status": order.status,
                 "items": [
                     {
@@ -133,7 +136,7 @@ def get_order(order_id):
 
         return jsonify({
             "id": order.id,
-            "total_amount": order.total_price,
+            "total_price": order.total_price,
             "status": order.status,
             "items": [
                 {
@@ -169,7 +172,7 @@ def update_order(order_id):
         order.status = status
         db.session.commit()
 
-        return jsonify({"message": "Order updated"}), 200
+        return jsonify({"message": "Order updated successfully"}), 200
 
     except Exception as e:
         db.session.rollback()
@@ -188,11 +191,13 @@ def delete_order(order_id):
         if not order:
             return jsonify({"message": "Order not found"}), 404
 
+        # Delete related items first
         OrderItem.query.filter_by(order_id=order.id).delete()
+
         db.session.delete(order)
         db.session.commit()
 
-        return jsonify({"message": "Order deleted"}), 200
+        return jsonify({"message": "Order deleted successfully"}), 200
 
     except Exception as e:
         db.session.rollback()

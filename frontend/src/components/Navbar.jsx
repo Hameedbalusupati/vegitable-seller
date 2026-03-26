@@ -14,16 +14,38 @@ const Navbar = () => {
   // LOAD USER + CART
   // ==============================
   useEffect(() => {
+    loadData();
+
+    // Listen for cart updates (important 🔥)
+    window.addEventListener("storage", loadData);
+
+    return () => {
+      window.removeEventListener("storage", loadData);
+    };
+  }, []);
+
+  const loadData = () => {
     try {
       const storedUser = JSON.parse(localStorage.getItem("user"));
-      setUser(storedUser);
+      setUser(storedUser || null);
     } catch {
       setUser(null);
     }
 
-    const cart = JSON.parse(localStorage.getItem("cart")) || [];
-    setCartCount(cart.length);
-  }, []);
+    try {
+      const cart = JSON.parse(localStorage.getItem("cart")) || [];
+      setCartCount(cart.length);
+    } catch {
+      setCartCount(0);
+    }
+  };
+
+  // ==============================
+  // CLOSE MENU ON ROUTE CHANGE
+  // ==============================
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
 
   // ==============================
   // LOGOUT
@@ -35,24 +57,33 @@ const Navbar = () => {
     navigate("/login");
   };
 
-  const closeMenu = () => setMenuOpen(false);
-
   // ==============================
   // ACTIVE LINK STYLE
   // ==============================
-  const isActive = (path) => (location.pathname === path ? "active-link" : "");
+  const isActive = (path) =>
+    location.pathname === path ? "active-link" : "";
 
   return (
     <nav className="navbar">
       <div className="navbar-container">
 
         {/* LOGO */}
-        <div className="logo" onClick={() => navigate("/")}>
+        <div
+          className="logo"
+          onClick={() => navigate("/")}
+          role="button"
+          tabIndex={0}
+          onKeyPress={(e) => e.key === "Enter" && navigate("/")}
+        >
           VeggieMart
         </div>
 
         {/* MENU ICON (MOBILE) */}
-        <div className="menu-icon" onClick={() => setMenuOpen(!menuOpen)}>
+        <div
+          className="menu-icon"
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Toggle menu"
+        >
           ☰
         </div>
 
@@ -60,19 +91,19 @@ const Navbar = () => {
         <ul className={menuOpen ? "nav-links active" : "nav-links"}>
 
           <li>
-            <Link to="/" className={isActive("/")} onClick={closeMenu}>
+            <Link to="/" className={isActive("/")} onClick={() => setMenuOpen(false)}>
               Home
             </Link>
           </li>
 
           <li>
-            <Link to="/products" className={isActive("/products")} onClick={closeMenu}>
+            <Link to="/products" className={isActive("/products")} onClick={() => setMenuOpen(false)}>
               Products
             </Link>
           </li>
 
           <li>
-            <Link to="/cart" className={isActive("/cart")} onClick={closeMenu}>
+            <Link to="/cart" className={isActive("/cart")} onClick={() => setMenuOpen(false)}>
               Cart ({cartCount})
             </Link>
           </li>
@@ -81,12 +112,12 @@ const Navbar = () => {
           {user?.role === "user" && (
             <>
               <li>
-                <Link to="/orders" className={isActive("/orders")} onClick={closeMenu}>
+                <Link to="/orders" className={isActive("/orders")}>
                   My Orders
                 </Link>
               </li>
               <li>
-                <Link to="/profile" className={isActive("/profile")} onClick={closeMenu}>
+                <Link to="/profile" className={isActive("/profile")}>
                   Profile
                 </Link>
               </li>
@@ -95,7 +126,7 @@ const Navbar = () => {
 
           {user?.role === "farmer" && (
             <li>
-              <Link to="/farmer-dashboard" onClick={closeMenu}>
+              <Link to="/farmer-dashboard" className={isActive("/farmer-dashboard")}>
                 Dashboard
               </Link>
             </li>
@@ -103,7 +134,7 @@ const Navbar = () => {
 
           {user?.role === "admin" && (
             <li>
-              <Link to="/admin-dashboard" onClick={closeMenu}>
+              <Link to="/admin-dashboard" className={isActive("/admin-dashboard")}>
                 Admin Panel
               </Link>
             </li>
@@ -113,15 +144,15 @@ const Navbar = () => {
           {!user ? (
             <>
               <li>
-                <Link to="/login" onClick={closeMenu}>Login</Link>
+                <Link to="/login">Login</Link>
               </li>
               <li>
-                <Link to="/register" onClick={closeMenu}>Register</Link>
+                <Link to="/register">Register</Link>
               </li>
             </>
           ) : (
             <li>
-              <button className="logout-btn" onClick={handleLogout}>
+              ~<button className="logout-btn" onClick={handleLogout}>
                 Logout
               </button>
             </li>

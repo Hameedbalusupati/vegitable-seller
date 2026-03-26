@@ -1,15 +1,13 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.extensions import db
-from app.models.user_model import User
-from app.models.product_model import Product
-from app.models.order_model import Order
-from app.models.order_item_model import OrderItem
+from app.models import User, Product, Order, OrderItem
 
 user_bp = Blueprint("user", __name__)
 
+
 # ==============================
-# GET ALL PRODUCTS
+# GET ALL PRODUCTS (PUBLIC)
 # ==============================
 @user_bp.route("/products", methods=["GET"])
 def get_all_products():
@@ -24,7 +22,7 @@ def get_all_products():
                 "price_per_kg": p.price_per_kg,
                 "bulk_price": p.bulk_price,
                 "stock": p.stock,
-                "image": getattr(p, "image", "")
+                "image": p.image or ""
             })
 
         return jsonify(result), 200
@@ -50,7 +48,7 @@ def get_product(product_id):
             "price_per_kg": product.price_per_kg,
             "bulk_price": product.bulk_price,
             "stock": product.stock,
-            "image": getattr(product, "image", "")
+            "image": product.image or ""
         }), 200
 
     except Exception as e:
@@ -75,20 +73,21 @@ def create_order():
         if len(items) == 0:
             return jsonify({"message": "Cart is empty"}), 400
 
-        order = Order(user_id=user_id, total_price=0, status="Pending")
+        order = Order(user_id=user_id, total_price=0, status="pending")
         db.session.add(order)
         db.session.flush()
 
         total_price = 0
 
         for item in items:
-            product = db.session.get(Product, item.get("_id"))
-
-            if not product:
-                return jsonify({"message": "Product not found"}), 400
-
+            product_id = item.get("id")  # ✅ FIXED
             quantity = item.get("quantity", 1)
             order_type = item.get("type", "kg")
+
+            product = db.session.get(Product, product_id)
+
+            if not product:
+                return jsonify({"message": f"Product {product_id} not found"}), 400
 
             if quantity <= 0:
                 return jsonify({"message": "Invalid quantity"}), 400
@@ -96,6 +95,7 @@ def create_order():
             if product.stock < quantity:
                 return jsonify({"message": f"{product.name} out of stock"}), 400
 
+            # Price calculation
             if order_type == "kg":
                 price = product.price_per_kg * quantity
             else:
@@ -144,7 +144,7 @@ def get_my_orders():
 
             result.append({
                 "id": order.id,
-                "total_amount": order.total_price,
+                "total_price": order.total_price,
                 "status": order.status,
                 "items": [
                     {
@@ -205,7 +205,7 @@ def update_profile():
 
         db.session.commit()
 
-        return jsonify({"message": "Profile updated"}), 200
+        return jsonify({"message": "Profile updated successfully"}), 200
 
     except Exception as e:
         db.session.rollback()

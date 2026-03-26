@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 
 // Create Context
 const CartContext = createContext();
@@ -13,13 +13,35 @@ export const useCart = () => {
 // Provider
 export const CartProvider = ({ children }) => {
 
-  const [cart, setCart] = useState(() => {
+  const [cart, setCart] = useState([]);
+
+  // ==============================
+  // LOAD CART
+  // ==============================
+  useEffect(() => {
     try {
-      return JSON.parse(localStorage.getItem("cart")) || [];
+      const storedCart = JSON.parse(localStorage.getItem("cart")) || [];
+      setCart(storedCart);
     } catch {
-      return [];
+      setCart([]);
     }
-  });
+
+    // Sync across components 🔥
+    window.addEventListener("storage", loadCart);
+
+    return () => {
+      window.removeEventListener("storage", loadCart);
+    };
+  }, []);
+
+  const loadCart = () => {
+    try {
+      const storedCart = JSON.parse(localStorage.getItem("cart")) || [];
+      setCart(storedCart);
+    } catch {
+      setCart([]);
+    }
+  };
 
   // ==============================
   // SAVE CART
@@ -27,22 +49,34 @@ export const CartProvider = ({ children }) => {
   const saveCart = (newCart) => {
     setCart(newCart);
     localStorage.setItem("cart", JSON.stringify(newCart));
+
+    // 🔥 notify all components
+    window.dispatchEvent(new Event("storage"));
   };
 
   // ==============================
   // ADD TO CART
   // ==============================
   const addToCart = (product) => {
+    if (!product) return;
+
     let updated = [...cart];
 
     const existing = updated.find(
-      (item) => item.id === product.id || item._id === product._id
+      (item) => item._id === product._id
     );
 
     if (existing) {
-      existing.quantity += 1;
+      // respect stock if available
+      const newQty = existing.quantity + (product.quantity || 1);
+      existing.quantity = product.stock
+        ? Math.min(newQty, product.stock)
+        : newQty;
     } else {
-      updated.push({ ...product, quantity: 1 });
+      updated.push({
+        ...product,
+        quantity: product.quantity || 1
+      });
     }
 
     saveCart(updated);
@@ -52,9 +86,7 @@ export const CartProvider = ({ children }) => {
   // REMOVE
   // ==============================
   const removeFromCart = (id) => {
-    const updated = cart.filter(
-      (item) => item.id !== id && item._id !== id
-    );
+    const updated = cart.filter((item) => item._id !== id);
     saveCart(updated);
   };
 
@@ -62,11 +94,20 @@ export const CartProvider = ({ children }) => {
   // INCREASE
   // ==============================
   const increaseQty = (id) => {
-    const updated = cart.map((item) =>
-      item.id === id || item._id === id
-        ? { ...item, quantity: item.quantity + 1 }
-        : item
-    );
+    const updated = cart.map((item) => {
+      if (item._id === id) {
+        const newQty = item.quantity + 1;
+
+        return {
+          ...item,
+          quantity: item.stock
+            ? Math.min(newQty, item.stock)
+            : newQty
+        };
+      }
+      return item;
+    });
+
     saveCart(updated);
   };
 
@@ -76,7 +117,7 @@ export const CartProvider = ({ children }) => {
   const decreaseQty = (id) => {
     const updated = cart
       .map((item) =>
-        item.id === id || item._id === id
+        item._id === id
           ? { ...item, quantity: item.quantity - 1 }
           : item
       )
@@ -98,7 +139,11 @@ export const CartProvider = ({ children }) => {
   const totalPrice = cart.reduce(
     (sum, item) =>
       sum +
-      (item.price_retail || item.price_per_kg || item.price || 0) *
+      (item.selectedPrice ||
+        item.price_per_kg ||
+        item.price_retail ||
+        item.price ||
+        0) *
         item.quantity,
     0
   );
@@ -115,6 +160,7 @@ export const CartProvider = ({ children }) => {
     <CartContext.Provider
       value={{
         cart,
+        setCart,
         addToCart,
         removeFromCart,
         increaseQty,

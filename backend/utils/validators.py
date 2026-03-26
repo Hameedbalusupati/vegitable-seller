@@ -8,10 +8,15 @@ class Validators:
     # ==============================
     @staticmethod
     def required_fields(data, fields):
+        if not isinstance(data, dict):
+            return False, "Invalid input data"
+
         missing = []
 
         for field in fields:
-            if field not in data or data[field] in [None, ""]:
+            value = data.get(field)
+
+            if value is None or str(value).strip() == "":
                 missing.append(field)
 
         if missing:
@@ -28,7 +33,10 @@ class Validators:
         if not email:
             return False, "Email is required"
 
-        pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+        email = email.strip()
+
+        pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+
         if not re.match(pattern, email):
             return False, "Invalid email format"
 
@@ -42,6 +50,8 @@ class Validators:
     def validate_password(password):
         if not password:
             return False, "Password is required"
+
+        password = password.strip()
 
         if len(password) < 8:
             return False, "Password must be at least 8 characters"
@@ -62,14 +72,17 @@ class Validators:
 
 
     # ==============================
-    # VALIDATE PHONE NUMBER
+    # VALIDATE PHONE NUMBER (INDIA)
     # ==============================
     @staticmethod
     def validate_phone(phone):
         if not phone:
             return False, "Phone number is required"
 
-        pattern = r"^[6-9]\d{9}$"  # Indian format
+        phone = str(phone).strip()
+
+        pattern = r"^[6-9]\d{9}$"
+
         if not re.match(pattern, phone):
             return False, "Invalid phone number"
 
@@ -77,14 +90,14 @@ class Validators:
 
 
     # ==============================
-    # VALIDATE NUMBER (GENERIC)
+    # VALIDATE NUMBER
     # ==============================
     @staticmethod
     def validate_number(value, field_name="value"):
         try:
             float(value)
             return True, f"{field_name} is valid"
-        except:
+        except (ValueError, TypeError):
             return False, f"{field_name} must be a number"
 
 
@@ -95,10 +108,13 @@ class Validators:
     def validate_positive_number(value, field_name="value"):
         try:
             val = float(value)
+
             if val <= 0:
                 return False, f"{field_name} must be greater than 0"
+
             return True, f"{field_name} is valid"
-        except:
+
+        except (ValueError, TypeError):
             return False, f"{field_name} must be a number"
 
 
@@ -126,6 +142,8 @@ class Validators:
         if not text:
             return False, f"{field_name} is required"
 
+        text = str(text).strip()
+
         if len(text) < min_len:
             return False, f"{field_name} must be at least {min_len} characters"
 
@@ -140,13 +158,17 @@ class Validators:
     # ==============================
     @staticmethod
     def validate_order_items(items):
-        if not items or not isinstance(items, list):
+        if not isinstance(items, list):
             return False, "Items must be a list"
 
         if len(items) == 0:
             return False, "Order items cannot be empty"
 
         for item in items:
+
+            if not isinstance(item, dict):
+                return False, "Invalid item format"
+
             if "product_id" not in item:
                 return False, "product_id missing in item"
 
@@ -171,6 +193,11 @@ class Validators:
     # ==============================
     @staticmethod
     def validate_role(role):
+        if not role:
+            return False, "Role is required"
+
+        role = role.lower()
+
         allowed_roles = ["admin", "farmer", "customer"]
 
         if role not in allowed_roles:

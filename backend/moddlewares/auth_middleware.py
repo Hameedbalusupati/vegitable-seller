@@ -1,7 +1,8 @@
 from functools import wraps
-from flask import request, jsonify, g
+from flask import jsonify, g
 from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
-from app.models.user_model import User
+from app.extensions import db
+from app.models import User  # ✅ FIXED IMPORT
 
 
 # ==============================
@@ -15,11 +16,11 @@ def auth_required():
                 # Verify JWT token
                 verify_jwt_in_request()
 
-                # Get user id from token
+                # Get user id
                 user_id = get_jwt_identity()
 
-                # Fetch user from DB
-                user = User.query.get(user_id)
+                # Fetch user
+                user = db.session.get(User, user_id)
 
                 if not user:
                     return jsonify({"error": "User not found"}), 404
@@ -40,7 +41,7 @@ def auth_required():
 
 
 # ==============================
-# OPTIONAL USER (NO STRICT AUTH)
+# OPTIONAL AUTH MIDDLEWARE
 # ==============================
 def optional_auth():
     def decorator(func):
@@ -51,7 +52,7 @@ def optional_auth():
                 user_id = get_jwt_identity()
 
                 if user_id:
-                    user = User.query.get(user_id)
+                    user = db.session.get(User, user_id)
                     g.current_user = user
                 else:
                     g.current_user = None

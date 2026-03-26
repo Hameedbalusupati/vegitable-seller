@@ -12,30 +12,27 @@ class SecurityUtils:
     # ==============================
     @staticmethod
     def hash_password(password: str) -> str:
+        if not password:
+            raise ValueError("Password cannot be empty")
         return generate_password_hash(password)
-
 
     # ==============================
     # VERIFY PASSWORD
     # ==============================
     @staticmethod
     def verify_password(password: str, hashed_password: str) -> bool:
+        if not password or not hashed_password:
+            return False
         return check_password_hash(hashed_password, password)
-
 
     # ==============================
     # VALIDATE STRONG PASSWORD
     # ==============================
     @staticmethod
     def validate_password(password: str):
-        """
-        Rules:
-        - At least 8 characters
-        - At least 1 uppercase
-        - At least 1 lowercase
-        - At least 1 digit
-        - At least 1 special character
-        """
+        if not password:
+            return False, "Password is required"
+
         if len(password) < 8:
             return False, "Password must be at least 8 characters long"
 
@@ -53,7 +50,6 @@ class SecurityUtils:
 
         return True, "Password is valid"
 
-
     # ==============================
     # GENERATE RANDOM TOKEN
     # ==============================
@@ -61,58 +57,56 @@ class SecurityUtils:
     def generate_token():
         return secrets.token_hex(32)
 
-
     # ==============================
-    # GENERATE UNIQUE ID
+    # GENERATE UUID
     # ==============================
     @staticmethod
     def generate_uuid():
         return str(uuid.uuid4())
 
-
     # ==============================
-    # GENERATE OTP (6 DIGITS)
+    # GENERATE OTP
     # ==============================
     @staticmethod
     def generate_otp(length=6):
+        if length <= 0:
+            length = 6
         return ''.join(secrets.choice(string.digits) for _ in range(length))
-
 
     # ==============================
     # GENERATE RANDOM PASSWORD
     # ==============================
     @staticmethod
     def generate_random_password(length=10):
+        if length < 6:
+            length = 6
+
         characters = string.ascii_letters + string.digits + "!@#$%^&*"
         return ''.join(secrets.choice(characters) for _ in range(length))
-
 
     # ==============================
     # SANITIZE INPUT
     # ==============================
     @staticmethod
     def sanitize_input(text: str) -> str:
-        """
-        Removes dangerous characters (basic protection)
-        """
         if not text:
-            return text
+            return ""
 
-        # Remove script tags
-        text = re.sub(r"<.*?>", "", text)
+        # Remove HTML tags safely
+        text = re.sub(r"<[^>]*?>", "", text)
 
-        # Remove special dangerous chars
+        # Remove dangerous characters
         text = re.sub(r"[\"'`;]", "", text)
 
         return text.strip()
-
 
     # ==============================
     # VALIDATE EMAIL FORMAT
     # ==============================
     @staticmethod
     def validate_email(email: str):
-        pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
-        if re.match(pattern, email):
-            return True
-        return False
+        if not email:
+            return False
+
+        pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+        return bool(re.match(pattern, email))

@@ -4,15 +4,24 @@ import AppRoutes from "./routes/AppRoutes";
 import { AuthProvider } from "./context/AuthProvider";
 import { CartProvider } from "./context/CartContext";
 
+// Optional global components
+import Navbar from "./components/Navbar";
+
 function App() {
   return (
-    <AuthProvider>
-      <CartProvider>
-        <BrowserRouter>
+    <BrowserRouter>
+      <AuthProvider>
+        <CartProvider>
+
+          {/* 🔥 GLOBAL NAVBAR */}
+          <Navbar />
+
+          {/* ROUTES */}
           <AppRoutes />
-        </BrowserRouter>
-      </CartProvider>
-    </AuthProvider>
+
+        </CartProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import API from "../services/api";
 import Footer from "../components/Footer";
+import { useCart } from "../hooks/useCart";
 import "./Home.css";
 
 export default function Home() {
@@ -10,8 +11,10 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const { addToCart } = useCart(); // 🔥 use context
+
   // ==============================
-  // FETCH PRODUCTS (FIXED)
+  // FETCH PRODUCTS
   // ==============================
   const fetchProducts = useCallback(async (retry = 0) => {
     try {
@@ -33,36 +36,9 @@ export default function Home() {
     }
   }, []);
 
-  // ==============================
-  // USE EFFECT (FIXED)
-  // ==============================
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
-
-  // ==============================
-  // ADD TO CART
-  // ==============================
-  const addToCart = (product) => {
-    try {
-      let cart = JSON.parse(localStorage.getItem("cart")) || [];
-
-      const existing = cart.find(
-        (item) => item._id === product._id || item.id === product.id
-      );
-
-      if (existing) {
-        existing.quantity += 1;
-      } else {
-        cart.push({ ...product, quantity: 1 });
-      }
-
-      localStorage.setItem("cart", JSON.stringify(cart));
-      alert("Added to cart");
-    } catch (err) {
-      console.error("Cart error:", err);
-    }
-  };
 
   // ==============================
   // SEARCH FILTER
@@ -113,6 +89,7 @@ export default function Home() {
   return (
     <div className="home">
 
+      {/* NAVBAR */}
       <div className="navbar">
         <h2>VeggieMart</h2>
 
@@ -129,11 +106,13 @@ export default function Home() {
         </div>
       </div>
 
+      {/* HERO */}
       <div className="hero">
         <h1>Fresh Vegetables Delivered to Your Door</h1>
         <p>Farm fresh veggies at best price</p>
       </div>
 
+      {/* PRODUCTS */}
       <div className="product-section">
         <h2>Fresh Vegetables</h2>
 
@@ -148,7 +127,15 @@ export default function Home() {
                   alt={p.name}
                 />
                 <h3>{p.name}</h3>
-                <p>₹{p.price_retail || p.price_per_kg}</p>
+
+                <p>
+                  ₹{(
+                    p.price_retail ||
+                    p.price_per_kg ||
+                    p.price ||
+                    0
+                  ).toFixed(2)}
+                </p>
 
                 <button onClick={() => addToCart(p)}>
                   Add to Cart

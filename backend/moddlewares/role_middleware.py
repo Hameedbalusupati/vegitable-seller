@@ -12,22 +12,34 @@ def role_required(*roles):
     @role_required("admin", "farmer")
     """
 
+    # Normalize roles to lowercase
+    roles = [r.lower() for r in roles]
+
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
 
-            # Check if user exists in request context
+            # Get user from global context
             user = getattr(g, "current_user", None)
 
             if not user:
                 return jsonify({"error": "Authentication required"}), 401
 
+            # Ensure user has role
+            user_role = getattr(user, "role", None)
+
+            if not user_role:
+                return jsonify({"error": "User role not assigned"}), 403
+
+            # Normalize role
+            user_role = user_role.lower()
+
             # Check role
-            if user.role not in roles:
+            if user_role not in roles:
                 return jsonify({
                     "error": "Access denied",
                     "required_roles": roles,
-                    "your_role": user.role
+                    "your_role": user_role
                 }), 403
 
             return func(*args, **kwargs)
@@ -37,22 +49,16 @@ def role_required(*roles):
 
 
 # ==============================
-# ADMIN ONLY
+# ROLE SHORTCUTS
 # ==============================
 def admin_required():
     return role_required("admin")
 
 
-# ==============================
-# FARMER ONLY
-# ==============================
 def farmer_required():
     return role_required("farmer")
 
 
-# ==============================
-# CUSTOMER ONLY
-# ==============================
 def customer_required():
     return role_required("customer")
 
@@ -73,4 +79,4 @@ def all_roles():
 # ==============================
 def get_current_role():
     user = getattr(g, "current_user", None)
-    return user.role if user else None
+    return getattr(user, "role", None)

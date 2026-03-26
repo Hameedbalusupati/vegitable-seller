@@ -12,26 +12,33 @@ def create_app():
     # ==============================
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "secret-key")
 
-    # 🔥 DATABASE FIX (Render PostgreSQL)
+    # ==============================
+    # DATABASE (Render + Local FIX)
+    # ==============================
     database_url = os.getenv("DATABASE_URL")
 
-    if database_url and database_url.startswith("postgres://"):
+    if not database_url:
+        # Local fallback (IMPORTANT)
+        database_url = "sqlite:///local.db"
+
+    if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://")
 
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     # SSL for Render PostgreSQL
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "connect_args": {"sslmode": "require"}
-    }
+    if "postgresql" in database_url:
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+            "connect_args": {"sslmode": "require"}
+        }
 
     # ==============================
-    # 🔥 UPLOAD FOLDER (FIXED FOR WINDOWS + RENDER)
+    # UPLOAD FOLDER
     # ==============================
-    if os.name == "nt":  # Windows (local)
+    if os.name == "nt":  # Windows
         upload_folder = os.path.join(os.getcwd(), "uploads")
-    else:  # Linux (Render)
+    else:  # Render/Linux
         upload_folder = "/tmp/uploads"
 
     app.config["UPLOAD_FOLDER"] = upload_folder
@@ -44,25 +51,17 @@ def create_app():
     jwt.init_app(app)
 
     # ==============================
-    # 🔥 CORS FIX (ALLOW FRONTEND)
+    # CORS (IMPORTANT)
     # ==============================
-    CORS(
-        app,
-        supports_credentials=True,
-        resources={r"/api/*": {"origins": "*"}}
-    )
+    CORS(app)
 
     # ==============================
-    # IMPORT MODELS
+    # IMPORT MODELS (FIXED)
     # ==============================
-    from .models.user_model import User
-    from .models.product_model import Product
-    from .models.order_model import Order
-    from .models.order_item_model import OrderItem
-    from .models.payment_model import Payment
-    from .models.delivery_model import Delivery
-    from .models.farmer_model import Farmer
-    from .models.notification_model import Notification
+    from .models import (
+        User, Product, Order, OrderItem,
+        Payment, Delivery, Notification
+    )
 
     # ==============================
     # REGISTER BLUEPRINTS
@@ -74,6 +73,7 @@ def create_app():
     from .routes.admin_routes import admin_bp
     from .routes.farmer_routes import farmer_bp
     from .routes.payment_routes import payment_bp
+    from .routes.notification_route import notification_bp  # ✅ ADDED
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(product_bp, url_prefix="/api/products")
@@ -82,6 +82,7 @@ def create_app():
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
     app.register_blueprint(farmer_bp, url_prefix="/api/farmer")
     app.register_blueprint(payment_bp, url_prefix="/api/payments")
+    app.register_blueprint(notification_bp, url_prefix="/api/notifications")  # ✅ ADDED
 
     # ==============================
     # CREATE TABLES
@@ -90,7 +91,7 @@ def create_app():
         db.create_all()
 
     # ==============================
-    # SERVE UPLOADED IMAGES
+    # SERVE IMAGES
     # ==============================
     @app.route("/api/uploads/<filename>")
     def uploaded_file(filename):

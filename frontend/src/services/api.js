@@ -1,14 +1,29 @@
 import axios from "axios";
 
-const BASE_URL = import.meta.env.VITE_API_URL;
+// ==============================
+// BASE URL SETUP
+// ==============================
+let BASE_URL = import.meta.env.VITE_API_URL;
 
-// 🔴 Check env
+// Fallback (important for safety)
 if (!BASE_URL) {
   console.error("❌ VITE_API_URL is not defined");
+  BASE_URL = "http://localhost:5000"; // fallback
 }
 
+// Remove trailing slash
+BASE_URL = BASE_URL.replace(/\/$/, "");
+
+// Ensure only ONE /api
+const API_URL = BASE_URL.endsWith("/api")
+  ? BASE_URL
+  : `${BASE_URL}/api`;
+
+// ==============================
+// AXIOS INSTANCE
+// ==============================
 const API = axios.create({
-  baseURL: BASE_URL + "/api", // ✅ IMPORTANT FIX
+  baseURL: API_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -39,8 +54,14 @@ API.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // 🔥 Handle Render sleep
+    // ==============================
+    // RETRY LOGIC (ONLY GET REQUESTS)
+    // ==============================
     if (!error.response && originalRequest) {
+      if (originalRequest.method !== "get") {
+        return Promise.reject(error); // don't retry POST/PUT
+      }
+
       if (!originalRequest._retryCount) {
         originalRequest._retryCount = 0;
       }
@@ -48,20 +69,30 @@ API.interceptors.response.use(
       if (originalRequest._retryCount < 3) {
         originalRequest._retryCount += 1;
 
+        console.log(`Retrying request... (${originalRequest._retryCount})`);
+
         await new Promise((res) => setTimeout(res, 4000));
         return API(originalRequest);
       }
 
-      return Promise.reject(new Error("Server not responding"));
+      return Promise.reject(new Error("Server not responding ❌"));
     }
 
-    // 🔐 Handle auth error
+    // ==============================
+    // AUTH ERROR (401)
+    // ==============================
     if (error.response?.status === 401) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      window.location.href = "/login";
+
+      // 🔥 Better than window.location.href
+      window.dispatchEvent(new Event("storage"));
+      window.location.assign("/login");
     }
 
+    // ==============================
+    // OTHER ERRORS
+    // ==============================
     return Promise.reject(error);
   }
 );

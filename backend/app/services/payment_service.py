@@ -1,6 +1,5 @@
 from app.extensions import db
-from app.models.payment_model import Payment
-from app.models.order_model import Order
+from app.models import Payment, Order  # ✅ FIXED IMPORT
 import uuid
 
 
@@ -18,6 +17,10 @@ class PaymentService:
             if not order_id:
                 return {"error": "Order ID is required"}, 400
 
+            # Validate payment method
+            if payment_method not in ["cod", "upi", "card"]:
+                return {"error": "Invalid payment method"}, 400
+
             order = db.session.get(Order, order_id)
 
             if not order:
@@ -25,6 +28,10 @@ class PaymentService:
 
             if order.user_id != user_id:
                 return {"error": "Unauthorized access to order"}, 403
+
+            # Check if already paid
+            if order.status == "paid":
+                return {"error": "Order already paid"}, 400
 
             # Prevent duplicate payment
             existing_payment = Payment.query.filter_by(order_id=order_id).first()
@@ -38,15 +45,19 @@ class PaymentService:
                 user_id=user_id,
                 amount=order.total_price,
                 payment_method=payment_method,
-                status="pending",
+                status="pending" if payment_method != "cod" else "success",
                 transaction_id=transaction_id
             )
+
+            # If COD → mark immediately paid
+            if payment_method == "cod":
+                order.status = "paid"
 
             db.session.add(payment)
             db.session.commit()
 
             return {
-                "message": "Payment initiated",
+                "message": "Payment created successfully",
                 "payment_id": payment.id,
                 "transaction_id": transaction_id,
                 "amount": payment.amount,
@@ -74,6 +85,7 @@ class PaymentService:
 
             payment.status = "success"
 
+            # Update order
             order = db.session.get(Order, payment.order_id)
             if order:
                 order.status = "paid"
@@ -81,7 +93,7 @@ class PaymentService:
             db.session.commit()
 
             return {
-                "message": "Payment successful",
+                "message": "Payment verified successfully",
                 "payment_id": payment.id,
                 "status": payment.status
             }, 200
@@ -152,7 +164,7 @@ class PaymentService:
             payment = db.session.get(Payment, payment_id)
 
             if not payment:
-                return {"error": "Payment not found"}, 404
+                return {"error": "Payment not found"} ,404
 
             db.session.delete(payment)
             db.session.commit()

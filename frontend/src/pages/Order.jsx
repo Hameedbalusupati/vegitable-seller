@@ -5,32 +5,38 @@ import "./Order.css";
 export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const fetchOrders = useCallback(async () => {
+  // ==============================
+  // FETCH ORDERS (WITH RETRY)
+  // ==============================
+  const fetchOrders = useCallback(async (retry = 0) => {
     try {
       const res = await API.get("/orders/my");
       setOrders(res.data || []);
+      setError("");
     } catch (err) {
       console.error("Error fetching orders:", err);
 
-      if (!err.response) {
-        console.log("Backend waking up...");
+      if (retry < 3) {
+        setTimeout(() => {
+          fetchOrders(retry + 1);
+        }, 4000);
       } else {
-        console.log("Failed to load orders");
+        setError("Server is waking up... please retry");
       }
+    } finally {
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      await fetchOrders();
-      setLoading(false);
-    };
-
-    loadData();
+    fetchOrders();
   }, [fetchOrders]);
 
+  // ==============================
+  // STATUS STYLE
+  // ==============================
   const getStatusClass = (status) => {
     switch (status) {
       case "Pending":
@@ -46,8 +52,29 @@ export default function Orders() {
     }
   };
 
+  // ==============================
+  // LOADING
+  // ==============================
   if (loading) {
     return <h2 className="loading">Loading Orders...</h2>;
+  }
+
+  // ==============================
+  // ERROR UI
+  // ==============================
+  if (error) {
+    return (
+      <div className="orders-container">
+        <h2>{error}</h2>
+        <button onClick={() => {
+          setLoading(true);
+          setError("");
+          fetchOrders();
+        }}>
+          Retry
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -58,12 +85,13 @@ export default function Orders() {
         <h2 className="empty">No orders found</h2>
       ) : (
         orders.map((order) => (
-          <div key={order._id} className="order-card">
+          <div key={order._id || order.id} className="order-card">
 
+            {/* HEADER */}
             <div className="order-header">
               <div>
-                <p><strong>Order ID:</strong> {order._id}</p>
-                <p><strong>Total:</strong> ₹{order.total_amount}</p>
+                <p><strong>Order ID:</strong> {(order._id || "").slice(0, 8)}...</p>
+                <p><strong>Total:</strong> ₹{(order.total_amount || 0).toFixed(2)}</p>
               </div>
 
               <div className={getStatusClass(order.status)}>
@@ -71,6 +99,7 @@ export default function Orders() {
               </div>
             </div>
 
+            {/* ITEMS */}
             <div className="order-items">
               {order.items && order.items.length > 0 ? (
                 order.items.map((item, i) => (
@@ -83,7 +112,12 @@ export default function Orders() {
                     <div>
                       <h4>{item.name}</h4>
                       <p>
-                        ₹{item.price || item.price_retail} x {item.quantity}
+                        ₹{(
+                          item.selectedPrice ||
+                          item.price ||
+                          item.price_retail ||
+                          0
+                        ).toFixed(2)} × {item.quantity}
                       </p>
                     </div>
                   </div>

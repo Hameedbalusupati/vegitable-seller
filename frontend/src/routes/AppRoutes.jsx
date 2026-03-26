@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../hooks/useAuth"; // 🔥 FIXED
 
 // Pages
 import Home from "../pages/Home";
@@ -11,12 +11,15 @@ import Register from "../pages/Register";
 import AdminDashboard from "../pages/AdminDashboard";
 import FarmerDashboard from "../pages/FarmerDashboard";
 
-
 // ==============================
 // PROTECTED ROUTE
 // ==============================
 const ProtectedRoute = ({ children }) => {
   const { user } = useAuth();
+
+  if (user === undefined) {
+    return <h2 style={{ textAlign: "center" }}>Loading...</h2>;
+  }
 
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -25,20 +28,26 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-
 // ==============================
-// ROLE BASED ROUTE (OPTIONAL BUT BEST)
+// ROLE BASED ROUTE
 // ==============================
 const RoleRoute = ({ children, role }) => {
   const { user } = useAuth();
 
-  if (!user) return <Navigate to="/login" replace />;
+  if (user === undefined) {
+    return <h2 style={{ textAlign: "center" }}>Loading...</h2>;
+  }
 
-  if (user.role !== role) return <Navigate to="/" replace />;
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user.role !== role) {
+    return <Navigate to="/" replace />;
+  }
 
   return children;
 };
-
 
 // ==============================
 // ROUTES
@@ -50,8 +59,25 @@ export default function AppRoutes() {
       {/* PUBLIC */}
       <Route path="/" element={<Home />} />
       <Route path="/products" element={<Products />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+
+      {/* AUTH ROUTES (redirect if already logged in) */}
+      <Route
+        path="/login"
+        element={
+          <AuthRedirect>
+            <Login />
+          </AuthRedirect>
+        }
+      />
+
+      <Route
+        path="/register"
+        element={
+          <AuthRedirect>
+            <Register />
+          </AuthRedirect>
+        }
+      />
 
       {/* PROTECTED */}
       <Route
@@ -72,7 +98,7 @@ export default function AppRoutes() {
         }
       />
 
-      {/* ADMIN DASHBOARD */}
+      {/* ADMIN */}
       <Route
         path="/admin"
         element={
@@ -82,7 +108,7 @@ export default function AppRoutes() {
         }
       />
 
-      {/* FARMER DASHBOARD */}
+      {/* FARMER */}
       <Route
         path="/farmer"
         element={
@@ -98,3 +124,16 @@ export default function AppRoutes() {
     </Routes>
   );
 }
+
+// ==============================
+// PREVENT LOGIN IF ALREADY LOGGED IN
+// ==============================
+const AuthRedirect = ({ children }) => {
+  const { user } = useAuth();
+
+  if (user) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+};

@@ -1,20 +1,27 @@
 /* ==============================
+   GOOGLE FONT IMPORT
+============================== */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap");
+
+/* ==============================
    GLOBAL RESET
 ============================== */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: "Poppins", sans-serif;
 }
 
 /* ==============================
    BODY STYLING
 ============================== */
 body {
+  font-family: "Poppins", sans-serif;
   background: linear-gradient(135deg, #e8f5e9, #f1f8e9);
   color: #333;
   min-height: 100vh;
+  line-height: 1.6;
+  scroll-behavior: smooth;
 }
 
 /* ==============================
@@ -23,6 +30,11 @@ body {
 a {
   text-decoration: none;
   color: inherit;
+  transition: 0.2s;
+}
+
+a:hover {
+  opacity: 0.8;
 }
 
 /* ==============================
@@ -30,11 +42,13 @@ a {
 ============================== */
 button {
   border-radius: 8px;
-  transition: 0.3s ease;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
 }
 
 button:hover {
-  transform: scale(1.05);
+  transform: scale(1.03); /* reduced for stability */
 }
 
 /* ==============================
@@ -44,6 +58,15 @@ input,
 select {
   border-radius: 8px;
   outline: none;
+  padding: 8px;
+  border: 1px solid #ccc;
+  transition: 0.2s;
+}
+
+input:focus,
+select:focus {
+  border-color: #4caf50;
+  box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
 }
 
 /* ==============================
@@ -56,4 +79,21 @@ select {
 ::-webkit-scrollbar-thumb {
   background: #4caf50;
   border-radius: 10px;
+}
+
+/* ==============================
+   IMAGE DEFAULT
+============================== */
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* ==============================
+   RESPONSIVE BASE
+============================== */
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
 }

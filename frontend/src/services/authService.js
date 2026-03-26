@@ -1,7 +1,7 @@
 import API from "./api";
 
 // ==============================
-// LOGIN
+// LOGIN (API ONLY)
 // ==============================
 export const loginUser = async (data) => {
   try {
@@ -13,10 +13,7 @@ export const loginUser = async (data) => {
       throw new Error("Invalid login response");
     }
 
-    localStorage.setItem("token", token);
-    localStorage.setItem("user", JSON.stringify(user));
-
-    return res.data;
+    return { token, user };
   } catch (error) {
     console.error("Login error:", error);
 
@@ -24,12 +21,12 @@ export const loginUser = async (data) => {
       throw new Error("Server is starting, try again");
     }
 
-    throw error;
+    throw error.response?.data?.message || "Login failed";
   }
 };
 
 // ==============================
-// REGISTER
+// REGISTER (API ONLY)
 // ==============================
 export const registerUser = async (data) => {
   try {
@@ -37,12 +34,7 @@ export const registerUser = async (data) => {
 
     const { token, user } = res.data || {};
 
-    if (token && user) {
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(user));
-    }
-
-    return res.data;
+    return { token, user, message: res.data?.message };
   } catch (error) {
     console.error("Register error:", error);
 
@@ -50,16 +42,20 @@ export const registerUser = async (data) => {
       throw new Error("Server is starting, try again");
     }
 
-    throw error;
+    throw error.response?.data?.message || "Registration failed";
   }
 };
 
 // ==============================
-// LOGOUT
+// LOGOUT (OPTIONAL)
 // ==============================
 export const logoutUser = () => {
+  // Let AuthContext handle state
   localStorage.removeItem("token");
   localStorage.removeItem("user");
+
+  // 🔥 Sync app
+  window.dispatchEvent(new Event("storage"));
 };
 
 // ==============================

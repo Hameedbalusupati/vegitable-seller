@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import API from "../services/api";
+import { useAuth } from "../hooks/useAuth";
 import "./Register.css";
 
 export default function Register() {
   const navigate = useNavigate();
+  const { login } = useAuth(); // 🔥 use context
 
   const [form, setForm] = useState({
     name: "",
@@ -32,17 +34,28 @@ export default function Register() {
   const handleRegister = async (e) => {
     e.preventDefault();
 
-    if (!form.name || !form.email || !form.password) {
+    const name = form.name.trim();
+    const email = form.email.trim();
+    const password = form.password.trim();
+    const confirmPassword = form.confirmPassword.trim();
+
+    // VALIDATION
+    if (!name || !email || !password) {
       alert("Please fill all fields");
       return;
     }
 
-    if (form.password.length < 6) {
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      alert("Enter valid email");
+      return;
+    }
+
+    if (password.length < 6) {
       alert("Password must be at least 6 characters");
       return;
     }
 
-    if (form.password !== form.confirmPassword) {
+    if (password !== confirmPassword) {
       alert("Passwords do not match");
       return;
     }
@@ -50,38 +63,43 @@ export default function Register() {
     try {
       setLoading(true);
 
-      // 🔥 TRY CORRECT ENDPOINT
       const res = await API.post("/auth/register", {
-        name: form.name,
-        email: form.email,
-        password: form.password,
+        name,
+        email,
+        password,
         role: form.role
       });
-      // 👉 if fails, try "/register"
 
-      const { token, user, message } = res.data;
+      const { token, user, message } = res.data || {};
 
       if (!res.data) {
         alert("Invalid server response");
         return;
       }
 
-      alert(message || "Registration Successful");
+      alert(message || "Registration Successful ✅");
 
       // ==============================
-      // OPTIONAL AUTO LOGIN
+      // AUTO LOGIN (BEST PRACTICE 🔥)
       // ==============================
       if (token && user) {
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
+        login({ token, user }); // 🔥 use context
       }
 
-      navigate("/login");
+      // ==============================
+      // REDIRECT
+      // ==============================
+      if (user?.role === "admin") {
+        navigate("/admin");
+      } else if (user?.role === "farmer") {
+        navigate("/farmer");
+      } else {
+        navigate("/");
+      }
 
     } catch (err) {
       console.error("Register error:", err);
 
-      // 🔥 Handle Render sleep
       if (!err.response) {
         alert("⏳ Server is starting... please try again.");
         return;
@@ -90,7 +108,7 @@ export default function Register() {
       if (err.response?.data?.message) {
         alert(err.response.data.message);
       } else {
-        alert("Registration failed (Email may already exist)");
+        alert("Registration failed (Email may already exist ❌)");
       }
 
     } finally {
@@ -142,7 +160,7 @@ export default function Register() {
         </select>
 
         <button type="submit" disabled={loading}>
-          {loading ? "Registering..." : "Register"}
+          {loading ? "⏳ Registering..." : "Register"}
         </button>
 
         <p>
