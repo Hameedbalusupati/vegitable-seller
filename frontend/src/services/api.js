@@ -2,19 +2,22 @@ import axios from "axios";
 
 const BASE_URL = import.meta.env.VITE_API_URL;
 
+// 🔴 Check env
 if (!BASE_URL) {
-  console.error("VITE_API_URL is not defined");
+  console.error("❌ VITE_API_URL is not defined");
 }
 
 const API = axios.create({
-  baseURL: BASE_URL,
+  baseURL: BASE_URL + "/api", // ✅ IMPORTANT FIX
   headers: {
     "Content-Type": "application/json",
   },
   timeout: 30000,
 });
 
+// ==============================
 // REQUEST INTERCEPTOR
+// ==============================
 API.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
@@ -28,12 +31,15 @@ API.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// ==============================
 // RESPONSE INTERCEPTOR
+// ==============================
 API.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
+    // 🔥 Handle Render sleep
     if (!error.response && originalRequest) {
       if (!originalRequest._retryCount) {
         originalRequest._retryCount = 0;
@@ -49,9 +55,8 @@ API.interceptors.response.use(
       return Promise.reject(new Error("Server not responding"));
     }
 
-    const status = error.response?.status;
-
-    if (status === 401) {
+    // 🔐 Handle auth error
+    if (error.response?.status === 401) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       window.location.href = "/login";
