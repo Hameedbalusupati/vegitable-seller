@@ -13,17 +13,6 @@ const Navbar = () => {
   // ==============================
   // LOAD USER + CART
   // ==============================
-  useEffect(() => {
-    loadData();
-
-    // Listen for cart updates (important 🔥)
-    window.addEventListener("storage", loadData);
-
-    return () => {
-      window.removeEventListener("storage", loadData);
-    };
-  }, []);
-
   const loadData = () => {
     try {
       const storedUser = JSON.parse(localStorage.getItem("user"));
@@ -41,10 +30,28 @@ const Navbar = () => {
   };
 
   // ==============================
+  // LOAD DATA (FIXED)
+  // ==============================
+  useEffect(() => {
+    const init = () => {
+      loadData();
+    };
+
+    init(); // ✅ safe call
+
+    window.addEventListener("storage", loadData);
+
+    return () => {
+      window.removeEventListener("storage", loadData);
+    };
+  }, []);
+
+  // ==============================
   // CLOSE MENU ON ROUTE CHANGE
   // ==============================
   useEffect(() => {
-    setMenuOpen(false);
+    const closeMenu = () => setMenuOpen(false);
+    closeMenu();
   }, [location.pathname]);
 
   // ==============================
@@ -53,12 +60,17 @@ const Navbar = () => {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+
     setUser(null);
+    setCartCount(0);
+
+    window.dispatchEvent(new Event("storage"));
+
     navigate("/login");
   };
 
   // ==============================
-  // ACTIVE LINK STYLE
+  // ACTIVE LINK
   // ==============================
   const isActive = (path) =>
     location.pathname === path ? "active-link" : "";
@@ -73,16 +85,14 @@ const Navbar = () => {
           onClick={() => navigate("/")}
           role="button"
           tabIndex={0}
-          onKeyPress={(e) => e.key === "Enter" && navigate("/")}
         >
           VeggieMart
         </div>
 
-        {/* MENU ICON (MOBILE) */}
+        {/* MENU ICON */}
         <div
           className="menu-icon"
           onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Toggle menu"
         >
           ☰
         </div>
@@ -91,19 +101,15 @@ const Navbar = () => {
         <ul className={menuOpen ? "nav-links active" : "nav-links"}>
 
           <li>
-            <Link to="/" className={isActive("/")} onClick={() => setMenuOpen(false)}>
-              Home
-            </Link>
+            <Link to="/" className={isActive("/")}>Home</Link>
           </li>
 
           <li>
-            <Link to="/products" className={isActive("/products")} onClick={() => setMenuOpen(false)}>
-              Products
-            </Link>
+            <Link to="/products" className={isActive("/products")}>Products</Link>
           </li>
 
           <li>
-            <Link to="/cart" className={isActive("/cart")} onClick={() => setMenuOpen(false)}>
+            <Link to="/cart" className={isActive("/cart")}>
               Cart ({cartCount})
             </Link>
           </li>
@@ -112,47 +118,35 @@ const Navbar = () => {
           {user?.role === "user" && (
             <>
               <li>
-                <Link to="/orders" className={isActive("/orders")}>
-                  My Orders
-                </Link>
+                <Link to="/orders">My Orders</Link>
               </li>
               <li>
-                <Link to="/profile" className={isActive("/profile")}>
-                  Profile
-                </Link>
+                <Link to="/profile">Profile</Link>
               </li>
             </>
           )}
 
           {user?.role === "farmer" && (
             <li>
-              <Link to="/farmer-dashboard" className={isActive("/farmer-dashboard")}>
-                Dashboard
-              </Link>
+              <Link to="/farmer-dashboard">Dashboard</Link>
             </li>
           )}
 
           {user?.role === "admin" && (
             <li>
-              <Link to="/admin-dashboard" className={isActive("/admin-dashboard")}>
-                Admin Panel
-              </Link>
+              <Link to="/admin-dashboard">Admin Panel</Link>
             </li>
           )}
 
           {/* AUTH */}
           {!user ? (
             <>
-              <li>
-                <Link to="/login">Login</Link>
-              </li>
-              <li>
-                <Link to="/register">Register</Link>
-              </li>
+              <li><Link to="/login">Login</Link></li>
+              <li><Link to="/register">Register</Link></li>
             </>
           ) : (
             <li>
-              ~<button className="logout-btn" onClick={handleLogout}>
+              <button className="logout-btn" onClick={handleLogout}>
                 Logout
               </button>
             </li>

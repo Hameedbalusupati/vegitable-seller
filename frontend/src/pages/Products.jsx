@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { getProducts } from "../services/productService";
 import { useCart } from "../hooks/useCart";
 import "./Products.css";
@@ -9,13 +9,15 @@ export default function Products() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const { addToCart } = useCart(); // 🔥 use context
+  const { addToCart } = useCart();
 
   // ==============================
-  // FETCH PRODUCTS WITH RETRY
+  // FETCH PRODUCTS (SAFE + CLEAN)
   // ==============================
-  const fetchProducts = async (retry = 0) => {
+  const fetchProducts = useCallback(async () => {
     try {
+      setLoading(true);
+
       const data = await getProducts();
 
       if (Array.isArray(data)) {
@@ -26,23 +28,18 @@ export default function Products() {
       }
     } catch (err) {
       console.error("Error fetching products:", err);
-
-      if (retry < 3) {
-        setTimeout(() => fetchProducts(retry + 1), 4000);
-      } else {
-        setError("Server is waking up... please retry");
-      }
+      setError("Server is waking up... please retry");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // ==============================
   // LOAD DATA
   // ==============================
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [fetchProducts]);
 
   // ==============================
   // SEARCH FILTER
@@ -52,7 +49,7 @@ export default function Products() {
   );
 
   // ==============================
-  // LOADING
+  // LOADING UI
   // ==============================
   if (loading) {
     return <h2 className="loading">Loading Products...</h2>;
@@ -66,11 +63,7 @@ export default function Products() {
       <div className="products-container">
         <h2>{error}</h2>
         <button
-          onClick={() => {
-            setLoading(true);
-            setError("");
-            fetchProducts();
-          }}
+          onClick={fetchProducts} // ✅ simple retry
         >
           Retry
         </button>

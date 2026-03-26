@@ -17,26 +17,32 @@ export default function AdminDashboard() {
   });
 
   // ==============================
-  // FETCH DATA
+  // FETCH PRODUCTS
   // ==============================
   const fetchProducts = useCallback(async () => {
     try {
       const res = await API.get("/products");
       setProducts(res.data || []);
-    } catch (err) {
-      alert("Failed to load products");
+    } catch {
+      console.error("Failed to load products");
     }
   }, []);
 
+  // ==============================
+  // FETCH ORDERS
+  // ==============================
   const fetchOrders = useCallback(async () => {
     try {
       const res = await API.get("/orders");
       setOrders(res.data || []);
-    } catch (err) {
-      alert("Failed to load orders");
+    } catch {
+      console.error("Failed to load orders");
     }
   }, []);
 
+  // ==============================
+  // LOAD DATA
+  // ==============================
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -53,12 +59,13 @@ export default function AdminDashboard() {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    setForm({
-      ...form,
-      [name]: name.includes("price") || name === "stock"
-        ? Number(value)
-        : value
-    });
+    setForm((prev) => ({
+      ...prev,
+      [name]:
+        name.includes("price") || name === "stock"
+          ? Number(value)
+          : value
+    }));
   };
 
   // ==============================
@@ -87,8 +94,9 @@ export default function AdminDashboard() {
         image: ""
       });
 
-      fetchProducts();
-    } catch (err) {
+      await fetchProducts();
+    } catch {
+      console.error("Failed to add product");
       alert("Failed to add product ❌");
     } finally {
       setActionLoading(false);
@@ -107,8 +115,9 @@ export default function AdminDashboard() {
       await API.delete(`/products/${id}`);
       alert("Product deleted ✅");
 
-      fetchProducts();
-    } catch (err) {
+      await fetchProducts();
+    } catch {
+      console.error("Delete failed");
       alert("Delete failed ❌");
     } finally {
       setActionLoading(false);
@@ -125,8 +134,9 @@ export default function AdminDashboard() {
       await API.put(`/orders/${id}`, { status });
       alert(`Order marked as ${status} ✅`);
 
-      fetchOrders();
-    } catch (err) {
+      await fetchOrders();
+    } catch {
+      console.error("Update failed");
       alert("Update failed ❌");
     } finally {
       setActionLoading(false);
@@ -144,7 +154,7 @@ export default function AdminDashboard() {
     <div className="dashboard">
       <h1>Admin Dashboard</h1>
 
-      {/* ================= ADD PRODUCT ================= */}
+      {/* ADD PRODUCT */}
       <div className="card">
         <h2>Add Vegetable</h2>
 
@@ -161,7 +171,7 @@ export default function AdminDashboard() {
         </form>
       </div>
 
-      {/* ================= PRODUCTS ================= */}
+      {/* PRODUCTS */}
       <div className="card">
         <h2>All Vegetables</h2>
 
@@ -191,7 +201,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* ================= ORDERS ================= */}
+      {/* ORDERS */}
       <div className="card">
         <h2>Orders</h2>
 

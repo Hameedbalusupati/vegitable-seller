@@ -13,27 +13,18 @@ export const useCart = () => {
 // Provider
 export const CartProvider = ({ children }) => {
 
-  const [cart, setCart] = useState([]);
-
-  // ==============================
-  // LOAD CART
-  // ==============================
-  useEffect(() => {
+  // ✅ Initialize directly (no useEffect warning)
+  const [cart, setCart] = useState(() => {
     try {
-      const storedCart = JSON.parse(localStorage.getItem("cart")) || [];
-      setCart(storedCart);
+      return JSON.parse(localStorage.getItem("cart")) || [];
     } catch {
-      setCart([]);
+      return [];
     }
+  });
 
-    // Sync across components 🔥
-    window.addEventListener("storage", loadCart);
-
-    return () => {
-      window.removeEventListener("storage", loadCart);
-    };
-  }, []);
-
+  // ==============================
+  // LOAD CART (MOVED ABOVE ✅)
+  // ==============================
   const loadCart = () => {
     try {
       const storedCart = JSON.parse(localStorage.getItem("cart")) || [];
@@ -42,6 +33,17 @@ export const CartProvider = ({ children }) => {
       setCart([]);
     }
   };
+
+  // ==============================
+  // SYNC CART
+  // ==============================
+  useEffect(() => {
+    window.addEventListener("storage", loadCart);
+
+    return () => {
+      window.removeEventListener("storage", loadCart);
+    };
+  }, []);
 
   // ==============================
   // SAVE CART
@@ -67,7 +69,6 @@ export const CartProvider = ({ children }) => {
     );
 
     if (existing) {
-      // respect stock if available
       const newQty = existing.quantity + (product.quantity || 1);
       existing.quantity = product.stock
         ? Math.min(newQty, product.stock)

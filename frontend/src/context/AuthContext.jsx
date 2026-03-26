@@ -1,34 +1,41 @@
-import { createContext, useState, useEffect } from "react";
+import { createContext, useState } from "react";
 
 // Create Context
-export const AuthContext = createContext();
+const AuthContext = createContext();
 
-// Provider
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-
-  // Load user from localStorage
-  useEffect(() => {
+// Provider Component
+const AuthProvider = ({ children }) => {
+  // ✅ Initialize directly (no useEffect → no ESLint error)
+  const [user, setUser] = useState(() => {
     try {
-      const storedUser = JSON.parse(localStorage.getItem("user"));
-      if (storedUser) setUser(storedUser);
-    } catch (error) {
-      setUser(null);
+      const storedUser = localStorage.getItem("user");
+      return storedUser ? JSON.parse(storedUser) : null;
+    } catch {
+      return null;
     }
-  }, []);
+  });
 
+  // ==============================
   // LOGIN
+  // ==============================
   const login = (userData, token) => {
     localStorage.setItem("user", JSON.stringify(userData));
     localStorage.setItem("token", token);
     setUser(userData);
+
+    // sync across components
+    window.dispatchEvent(new Event("storage"));
   };
 
+  // ==============================
   // LOGOUT
+  // ==============================
   const logout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
     setUser(null);
+
+    window.dispatchEvent(new Event("storage"));
   };
 
   return (
@@ -37,3 +44,6 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+
+// ✅ Named exports (important)
+export { AuthContext, AuthProvider };
