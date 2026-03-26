@@ -2,8 +2,8 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
 
-// Create Context
-const CartContext = createContext();
+// ✅ FIX: EXPORT CONTEXT
+export const CartContext = createContext();
 
 // Custom Hook
 export const useCart = () => {
@@ -13,7 +13,7 @@ export const useCart = () => {
 // Provider
 export const CartProvider = ({ children }) => {
 
-  // ✅ Initialize directly (no useEffect warning)
+  // INITIAL STATE
   const [cart, setCart] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("cart")) || [];
@@ -23,7 +23,7 @@ export const CartProvider = ({ children }) => {
   });
 
   // ==============================
-  // LOAD CART (MOVED ABOVE ✅)
+  // LOAD CART
   // ==============================
   const loadCart = () => {
     try {
@@ -52,7 +52,7 @@ export const CartProvider = ({ children }) => {
     setCart(newCart);
     localStorage.setItem("cart", JSON.stringify(newCart));
 
-    // 🔥 notify all components
+    // notify all components
     window.dispatchEvent(new Event("storage"));
   };
 
@@ -83,17 +83,13 @@ export const CartProvider = ({ children }) => {
     saveCart(updated);
   };
 
-  // ==============================
   // REMOVE
-  // ==============================
   const removeFromCart = (id) => {
     const updated = cart.filter((item) => item._id !== id);
     saveCart(updated);
   };
 
-  // ==============================
   // INCREASE
-  // ==============================
   const increaseQty = (id) => {
     const updated = cart.map((item) => {
       if (item._id === id) {
@@ -112,9 +108,7 @@ export const CartProvider = ({ children }) => {
     saveCart(updated);
   };
 
-  // ==============================
   // DECREASE
-  // ==============================
   const decreaseQty = (id) => {
     const updated = cart
       .map((item) =>
@@ -127,16 +121,12 @@ export const CartProvider = ({ children }) => {
     saveCart(updated);
   };
 
-  // ==============================
   // CLEAR
-  // ==============================
   const clearCart = () => {
     saveCart([]);
   };
 
-  // ==============================
   // TOTAL PRICE
-  // ==============================
   const totalPrice = cart.reduce(
     (sum, item) =>
       sum +
@@ -149,9 +139,7 @@ export const CartProvider = ({ children }) => {
     0
   );
 
-  // ==============================
   // TOTAL ITEMS
-  // ==============================
   const totalItems = cart.reduce(
     (sum, item) => sum + item.quantity,
     0
