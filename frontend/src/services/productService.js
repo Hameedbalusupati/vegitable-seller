@@ -10,11 +10,13 @@ export const getProducts = async () => {
   } catch (error) {
     console.error("Get products error:", error);
 
+    // 🔥 IMPORTANT: Don't break UI
     if (!error.response) {
-      throw new Error("Server is starting, please wait");
+      console.warn("Backend is sleeping or not reachable");
+      return []; // return empty instead of throwing
     }
 
-    throw error;
+    return [];
   }
 };
 
@@ -23,7 +25,7 @@ export const getProducts = async () => {
 // ==============================
 export const getProductById = async (id) => {
   try {
-    if (!id) throw new Error("Product ID required");
+    if (!id) return null;
 
     const res = await API.get(`/products/${id}`);
     return res.data;
@@ -31,15 +33,16 @@ export const getProductById = async (id) => {
     console.error("Get product error:", error);
 
     if (!error.response) {
-      throw new Error("Server is starting, try again");
+      console.warn("Backend sleeping...");
+      return null;
     }
 
-    throw error;
+    return null;
   }
 };
 
 // ==============================
-// ADD PRODUCT (ADMIN / FARMER)
+// ADD PRODUCT
 // ==============================
 export const addProduct = async (data) => {
   try {
@@ -51,12 +54,7 @@ export const addProduct = async (data) => {
     return res.data;
   } catch (error) {
     console.error("Add product error:", error);
-
-    if (!error.response) {
-      throw new Error("Server is starting, try again");
-    }
-
-    throw error;
+    return null;
   }
 };
 
@@ -65,18 +63,13 @@ export const addProduct = async (data) => {
 // ==============================
 export const updateProduct = async (id, data) => {
   try {
-    if (!id) throw new Error("Product ID required");
+    if (!id) return null;
 
     const res = await API.put(`/products/${id}`, data);
     return res.data;
   } catch (error) {
     console.error("Update product error:", error);
-
-    if (!error.response) {
-      throw new Error("Server is starting, try again");
-    }
-
-    throw error;
+    return null;
   }
 };
 
@@ -85,18 +78,13 @@ export const updateProduct = async (id, data) => {
 // ==============================
 export const deleteProduct = async (id) => {
   try {
-    if (!id) throw new Error("Product ID required");
+    if (!id) return null;
 
     const res = await API.delete(`/products/${id}`);
     return res.data;
   } catch (error) {
     console.error("Delete product error:", error);
-
-    if (!error.response) {
-      throw new Error("Server is starting, try again");
-    }
-
-    throw error;
+    return null;
   }
 };
 
@@ -113,9 +101,10 @@ export const searchProducts = async (query) => {
     console.error("Search error:", error);
 
     if (!error.response) {
-      throw new Error("Server is starting, please wait");
+      console.warn("Backend sleeping...");
+      return [];
     }
 
-    throw error;
+    return [];
   }
 };

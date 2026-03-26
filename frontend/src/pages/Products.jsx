@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
-import API from "../services/api";
+import { useEffect, useState } from "react";
+import { getProducts } from "../services/productService"; // ✅ use service
 import "./Products.css";
 
 export default function Products() {
@@ -8,36 +8,38 @@ export default function Products() {
   const [loading, setLoading] = useState(true);
 
   // ==============================
-  // FETCH PRODUCTS
+  // FETCH PRODUCTS (SAFE)
   // ==============================
-  const fetchProducts = useCallback(async () => {
+  const fetchProducts = async () => {
     try {
-      const res = await API.get("/products");
-      setProducts(res.data || []);
+      const data = await getProducts();
+
+      if (Array.isArray(data)) {
+        setProducts(data);
+      } else {
+        setProducts([]);
+      }
     } catch (err) {
       console.error("Error fetching products:", err);
-
-      // 🔥 Handle Render sleep
-      if (!err.response) {
-        console.log("Backend waking up...");
-      } else {
-        console.log("Failed to load products");
-      }
+      setProducts([]);
+    } finally {
+      setLoading(false); // 🔥 ALWAYS STOP LOADING
     }
-  }, []);
+  };
 
   // ==============================
   // LOAD DATA
   // ==============================
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      await fetchProducts();
-      setLoading(false);
-    };
+    fetchProducts();
 
-    loadData();
-  }, [fetchProducts]);
+    // 🔥 Optional retry if backend sleeping
+    const retry = setTimeout(() => {
+      fetchProducts();
+    }, 5000);
+
+    return () => clearTimeout(retry);
+  }, []);
 
   // ==============================
   // ADD TO CART
@@ -46,7 +48,7 @@ export default function Products() {
     try {
       let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-      const existing = cart.find((item) => item._id === product._id); // ✅ FIXED
+      const existing = cart.find((item) => item._id === product._id);
 
       if (existing) {
         existing.quantity += 1;
@@ -75,6 +77,9 @@ export default function Products() {
     return <h2 className="loading">Loading Products...</h2>;
   }
 
+  // ==============================
+  // UI
+  // ==============================
   return (
     <div className="products-container">
       <h1>All Vegetables</h1>
@@ -94,7 +99,7 @@ export default function Products() {
           <p>No vegetables found</p>
         ) : (
           filteredProducts.map((p) => (
-            <div key={p._id} className="product-card"> {/* ✅ FIXED */}
+            <div key={p._id} className="product-card">
               <img
                 src={p.image || "https://via.placeholder.com/150"}
                 alt={p.name}
