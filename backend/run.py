@@ -4,7 +4,11 @@ from app import create_app
 
 load_dotenv()
 
-app = create_app()
+try:
+    app = create_app()
+except Exception as e:
+    print("🔥 APP CRASH:", e)
+    raise e
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
