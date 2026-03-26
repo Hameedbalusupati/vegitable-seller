@@ -1,12 +1,15 @@
 import React from "react";
-import { createRoot } from "react-dom/client";
-import "./index.css";
+import ReactDOM from "react-dom/client";
+import App from "./App";
 
-// App
-import App from "./App.jsx";
+// ✅ Import AuthProvider
+import { AuthProvider } from "./context/AuthContext";
 
-createRoot(document.getElementById("root")).render(
+ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <App />
+    {/* ✅ Wrap your entire app */}
+    <AuthProvider>
+      <App />
+    </AuthProvider>
   </React.StrictMode>
 );
