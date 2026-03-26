@@ -1,6 +1,6 @@
 {
   "routes": [
-    { "handle": "filesystem" },
-    { "src": "/.*", "dest": "/index.html" }
+    { "src": "/api/(.*)", "dest": "https://vegitable-seller.onrender.com/api/$1" },
+    { "src": "/(.*)", "dest": "/" }
   ]
 }
