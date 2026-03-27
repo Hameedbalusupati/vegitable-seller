@@ -1,29 +1,24 @@
 import axios from "axios";
 
 // ==============================
-// BASE URL SETUP
+// BASE URL SETUP (FIXED)
 // ==============================
 let BASE_URL = import.meta.env.VITE_API_URL;
 
-// Fallback (important for safety)
+// Fallback
 if (!BASE_URL) {
   console.error("❌ VITE_API_URL is not defined");
-  BASE_URL = "http://localhost:5000"; // fallback
+  BASE_URL = "http://localhost:5000/api"; // include /api here
 }
 
 // Remove trailing slash
 BASE_URL = BASE_URL.replace(/\/$/, "");
 
-// Ensure only ONE /api
-const API_URL = BASE_URL.endsWith("/api")
-  ? BASE_URL
-  : `${BASE_URL}/api`;
-
 // ==============================
 // AXIOS INSTANCE
 // ==============================
 const API = axios.create({
-  baseURL: API_URL,
+  baseURL: BASE_URL, // ✅ NO AUTO /api
   headers: {
     "Content-Type": "application/json",
   },
@@ -55,16 +50,14 @@ API.interceptors.response.use(
     const originalRequest = error.config;
 
     // ==============================
-    // RETRY LOGIC (ONLY GET REQUESTS)
+    // RETRY LOGIC (ONLY GET)
     // ==============================
     if (!error.response && originalRequest) {
       if (originalRequest.method !== "get") {
-        return Promise.reject(error); // don't retry POST/PUT
+        return Promise.reject(error);
       }
 
-      if (!originalRequest._retryCount) {
-        originalRequest._retryCount = 0;
-      }
+      originalRequest._retryCount = originalRequest._retryCount || 0;
 
       if (originalRequest._retryCount < 3) {
         originalRequest._retryCount += 1;
@@ -85,14 +78,9 @@ API.interceptors.response.use(
       localStorage.removeItem("token");
       localStorage.removeItem("user");
 
-      // 🔥 Better than window.location.href
-      window.dispatchEvent(new Event("storage"));
       window.location.assign("/login");
     }
 
-    // ==============================
-    // OTHER ERRORS
-    // ==============================
     return Promise.reject(error);
   }
 );

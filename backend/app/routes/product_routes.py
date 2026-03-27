@@ -6,10 +6,6 @@ import os
 
 product_bp = Blueprint("products", __name__)
 
-
-# ==============================
-# CONFIG
-# ==============================
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
 
 
@@ -21,7 +17,7 @@ def allowed_file(filename):
 
 
 # ==============================
-# ADD PRODUCT (WITH IMAGE)
+# ADD PRODUCT
 # ==============================
 @product_bp.route("/", methods=["POST"])
 def add_product():
@@ -34,33 +30,22 @@ def add_product():
 
         file = request.files.get("image")
 
-        # Validation
         if not name or not price:
             return jsonify({"message": "Name and price required"}), 400
 
-        try:
-            price = float(price)
-            bulk_price = float(bulk_price)
-            stock = int(stock)
-        except ValueError:
-            return jsonify({"message": "Invalid number format"}), 400
-
-        if price <= 0:
-            return jsonify({"message": "Price must be greater than 0"}), 400
+        price = float(price)
+        bulk_price = float(bulk_price)
+        stock = int(stock)
 
         filename = ""
 
-        # Upload folder
         upload_folder = current_app.config.get("UPLOAD_FOLDER", "uploads")
         os.makedirs(upload_folder, exist_ok=True)
 
-        # Save image
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-
             file_path = os.path.join(upload_folder, filename)
 
-            # Avoid duplicate names
             counter = 1
             while os.path.exists(file_path):
                 name_part, ext = filename.rsplit(".", 1)
@@ -70,7 +55,6 @@ def add_product():
 
             file.save(file_path)
 
-        # Save product
         product = Product(
             name=name,
             price_per_kg=price,
@@ -91,7 +75,7 @@ def add_product():
                 "price_per_kg": product.price_per_kg,
                 "bulk_price": product.bulk_price,
                 "stock": product.stock,
-                "image": f"/api/products/uploads/{filename}" if filename else ""
+                "image": f"/products/uploads/{filename}" if filename else ""
             }
         }), 201
 
@@ -101,12 +85,14 @@ def add_product():
 
 
 # ==============================
-# GET ALL PRODUCTS
+# GET ALL PRODUCTS (FIXED)
 # ==============================
 @product_bp.route("/", methods=["GET"])
 def get_products():
     try:
         products = Product.query.all()
+
+        print("TOTAL PRODUCTS:", len(products))  # 🔥 debug log
 
         result = []
         for p in products:
@@ -116,12 +102,13 @@ def get_products():
                 "price_per_kg": p.price_per_kg,
                 "bulk_price": p.bulk_price,
                 "stock": p.stock,
-                "image": f"/api/products/uploads/{p.image}" if p.image else ""
+                "image": f"/products/uploads/{p.image}" if p.image else ""
             })
 
         return jsonify(result), 200
 
     except Exception as e:
+        print("ERROR:", str(e))
         return jsonify({"message": str(e)}), 500
 
 
@@ -142,7 +129,7 @@ def get_product(product_id):
             "price_per_kg": product.price_per_kg,
             "bulk_price": product.bulk_price,
             "stock": product.stock,
-            "image": f"/api/products/uploads/{product.image}" if product.image else ""
+            "image": f"/products/uploads/{product.image}" if product.image else ""
         }), 200
 
     except Exception as e:
@@ -199,7 +186,7 @@ def delete_product(product_id):
 
 
 # ==============================
-# SERVE IMAGES
+# SERVE IMAGES (FIXED PATH)
 # ==============================
 @product_bp.route("/uploads/<filename>")
 def get_image(filename):

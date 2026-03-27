@@ -6,7 +6,7 @@ import "./Login.css";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth(); // 🔥 use context
+  const { login } = useAuth();
 
   const [form, setForm] = useState({
     email: "",
@@ -26,7 +26,7 @@ export default function Login() {
   };
 
   // ==============================
-  // LOGIN FUNCTION
+  // LOGIN FUNCTION (FIXED)
   // ==============================
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -47,27 +47,30 @@ export default function Login() {
         password
       });
 
-      const { token, user } = res.data;
+      console.log("LOGIN RESPONSE:", res.data);
+
+      const token = res.data?.token;
+      const user = res.data?.user;
 
       if (!token || !user) {
         alert("Invalid server response");
         return;
       }
 
-      // 🔥 USE CONTEXT (IMPORTANT)
+      // ✅ SAVE USING CONTEXT
       login({ token, user });
 
       alert("Login Successful ✅");
 
       // ==============================
-      // ROLE BASED REDIRECT
+      // 🔥 FIXED REDIRECT
       // ==============================
       if (user.role === "admin") {
         navigate("/admin");
       } else if (user.role === "farmer") {
         navigate("/farmer");
       } else {
-        navigate("/");
+        navigate("/products"); // ✅ IMPORTANT FIX
       }
 
     } catch (err) {

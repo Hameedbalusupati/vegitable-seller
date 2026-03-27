@@ -6,7 +6,6 @@ import API from "./api";
 const handleError = (error, defaultMsg, fallback = null) => {
   console.error(defaultMsg, error);
 
-  // 🔥 Don't break UI if backend sleeping
   if (!error.response) {
     console.warn("Server not reachable / sleeping...");
     return fallback;
@@ -16,12 +15,30 @@ const handleError = (error, defaultMsg, fallback = null) => {
 };
 
 // ==============================
-// GET ALL PRODUCTS
+// HELPER: NORMALIZE DATA
+// ==============================
+const normalizeProducts = (data) => {
+  if (!data) return [];
+
+  if (Array.isArray(data)) return data;
+
+  if (Array.isArray(data.products)) return data.products;
+
+  if (Array.isArray(data.data)) return data.data;
+
+  return [];
+};
+
+// ==============================
+// GET ALL PRODUCTS (FIXED)
 // ==============================
 export const getProducts = async () => {
   try {
     const res = await API.get("/products");
-    return Array.isArray(res.data) ? res.data : [];
+
+    console.log("RAW PRODUCTS RESPONSE:", res.data);
+
+    return normalizeProducts(res.data);
   } catch (error) {
     return handleError(error, "Get products error", []);
   }
@@ -35,7 +52,8 @@ export const getProductById = async (id) => {
     if (!id) return null;
 
     const res = await API.get(`/products/${id}`);
-    return res.data || null;
+
+    return res.data?.product || res.data || null;
   } catch (error) {
     return handleError(error, "Get product error", null);
   }
@@ -51,7 +69,8 @@ export const addProduct = async (data) => {
     }
 
     const res = await API.post("/products", data);
-    return res.data || null;
+
+    return res.data?.product || res.data || null;
   } catch (error) {
     console.error("Add product error:", error);
     throw new Error(
@@ -70,7 +89,8 @@ export const updateProduct = async (id, data) => {
     }
 
     const res = await API.put(`/products/${id}`, data);
-    return res.data || null;
+
+    return res.data?.product || res.data || null;
   } catch (error) {
     console.error("Update product error:", error);
     throw new Error(
@@ -89,6 +109,7 @@ export const deleteProduct = async (id) => {
     }
 
     const res = await API.delete(`/products/${id}`);
+
     return res.data || null;
   } catch (error) {
     console.error("Delete product error:", error);
@@ -99,7 +120,7 @@ export const deleteProduct = async (id) => {
 };
 
 // ==============================
-// SEARCH PRODUCTS
+// SEARCH PRODUCTS (FIXED)
 // ==============================
 export const searchProducts = async (query) => {
   try {
@@ -109,7 +130,7 @@ export const searchProducts = async (query) => {
       `/products?search=${encodeURIComponent(query)}`
     );
 
-    return Array.isArray(res.data) ? res.data : [];
+    return normalizeProducts(res.data);
   } catch (error) {
     return handleError(error, "Search error", []);
   }

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import API from "../services/api";
 import Footer from "../components/Footer";
@@ -11,34 +11,42 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const { addToCart } = useCart(); // 🔥 use context
+  const { addToCart } = useCart();
 
   // ==============================
-  // FETCH PRODUCTS
+  // FETCH PRODUCTS (FIXED)
   // ==============================
-  const fetchProducts = useCallback(async (retry = 0) => {
+  const fetchProducts = async (retry = 0) => {
     try {
-      const res = await API.get("/products/");
-      setProducts(res.data || []);
+      const res = await API.get("/products");
+
+      console.log("API RESPONSE:", res.data);
+
+      const data = Array.isArray(res.data)
+        ? res.data
+        : res.data.products || [];
+
+      setProducts(data);
       setError("");
+      setLoading(false);
     } catch (err) {
       console.log("Fetch error:", err);
 
       if (retry < 3) {
+        console.log(`Retrying... (${retry + 1})`);
         setTimeout(() => {
           fetchProducts(retry + 1);
-        }, 5000);
+        }, 3000);
       } else {
         setError("Server is waking up... please click retry");
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
     fetchProducts();
-  }, [fetchProducts]);
+  }, []);
 
   // ==============================
   // SEARCH FILTER
@@ -120,28 +128,29 @@ export default function Home() {
           {filteredProducts.length === 0 ? (
             <p>No products found</p>
           ) : (
-            filteredProducts.map((p) => (
-              <div key={p._id || p.id} className="product-card">
-                <img
-                  src={p.image || "https://via.placeholder.com/150"}
-                  alt={p.name}
-                />
-                <h3>{p.name}</h3>
+            filteredProducts.map((p) => {
+              const price =
+                p.price_retail ||
+                p.price_per_kg ||
+                p.price ||
+                0;
 
-                <p>
-                  ₹{(
-                    p.price_retail ||
-                    p.price_per_kg ||
-                    p.price ||
-                    0
-                  ).toFixed(2)}
-                </p>
+              return (
+                <div key={p._id || p.id} className="product-card">
+                  <img
+                    src={p.image || "https://via.placeholder.com/150"}
+                    alt={p.name}
+                  />
+                  <h3>{p.name}</h3>
 
-                <button onClick={() => addToCart(p)}>
-                  Add to Cart
-                </button>
-              </div>
-            ))
+                  <p>₹{Number(price).toFixed(2)}</p>
+
+                  <button onClick={() => addToCart(p)}>
+                    Add to Cart
+                  </button>
+                </div>
+              );
+            })
           )}
         </div>
       </div>
