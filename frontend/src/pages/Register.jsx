@@ -6,7 +6,7 @@ import "./Register.css";
 
 export default function Register() {
   const navigate = useNavigate();
-  const { login } = useAuth(); // 🔥 use context
+  const { login } = useAuth();
 
   const [form, setForm] = useState({
     name: "",
@@ -29,7 +29,7 @@ export default function Register() {
   };
 
   // ==============================
-  // REGISTER FUNCTION
+  // REGISTER FUNCTION (FIXED)
   // ==============================
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -63,6 +63,7 @@ export default function Register() {
     try {
       setLoading(true);
 
+      // ✅ CORRECT ENDPOINT
       const res = await API.post("/auth/register", {
         name,
         email,
@@ -70,38 +71,43 @@ export default function Register() {
         role: form.role
       });
 
-      const { token, user, message } = res.data || {};
+      console.log("REGISTER RESPONSE:", res.data);
 
-      if (!res.data) {
-        alert("Invalid server response");
-        return;
-      }
+      const token = res.data?.token;
+      const user = res.data?.user;
+      const message = res.data?.message;
 
       alert(message || "Registration Successful ✅");
 
       // ==============================
-      // AUTO LOGIN (BEST PRACTICE 🔥)
+      // AUTO LOGIN
       // ==============================
       if (token && user) {
-        login({ token, user }); // 🔥 use context
+        login({ token, user });
       }
 
       // ==============================
-      // REDIRECT
+      // REDIRECT (FIXED)
       // ==============================
       if (user?.role === "admin") {
         navigate("/admin");
       } else if (user?.role === "farmer") {
         navigate("/farmer");
       } else {
-        navigate("/");
+        navigate("/products"); // ✅ IMPORTANT FIX
       }
 
     } catch (err) {
       console.error("Register error:", err);
 
+      // 🔥 HANDLE 404 SPECIFICALLY
+      if (err.response?.status === 404) {
+        alert("❌ API route not found (Check backend URL)");
+        return;
+      }
+
       if (!err.response) {
-        alert("⏳ Server is starting... please try again.");
+        alert("⏳ Server is waking up... try again in 30 seconds");
         return;
       }
 
@@ -153,7 +159,6 @@ export default function Register() {
           onChange={handleChange}
         />
 
-        {/* ROLE SELECT */}
         <select name="role" value={form.role} onChange={handleChange}>
           <option value="user">User</option>
           <option value="farmer">Farmer</option>
